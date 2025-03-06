@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --primary-bg: #1a0033;
+  --secondary-bg: #330066;
+  --text-color: #ffccff;
+  --highlight-color: #ff66ff;
+  --border-color: #ff00ff;
+  --glow-color: rgba(255, 0, 255, 0.6);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Press Start 2P', cursive;
+  background: linear-gradient(to right, var(--primary-bg), var(--secondary-bg));
+  color: var(--text-color);
+  text-shadow: 0 0 8px var(--glow-color);
+}
+
+/* Headings */
+h1, h2, h3 {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Buttons */
+button {
+  background-color: var(--highlight-color);
+  color: #1a001a;
+  border: 2px solid var(--border-color);
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+button:hover {
+  background-color: #ff33cc;
+  box-shadow: 0 0 10px var(--glow-color);
+}
+
+/* Links */
+a {
+  color: var(--highlight-color);
+  text-decoration: none;
+  transition: color 0.3s ease-in-out;
+}
+
+a:hover {
+  color: #ff33cc;
+}
+
+/* Neon Borders */
+.neon-border {
+  border: 2px solid var(--border-color);
+  box-shadow: 0 0 15px var(--glow-color);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+/* Game Hub Grid */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  justify-items: center;
+}
+
+/* Game Card */
+.game-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  text-align: center;
+  border-radius: 10px;
+  transition: all 0.3s ease-in-out;
+}
+
+.game-card:hover {
+  box-shadow: 0 0 15px var(--glow-color);
+  transform: scale(1.05);
+}
