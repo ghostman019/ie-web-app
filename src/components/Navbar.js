@@ -5,11 +5,6 @@ import './Navbar.css'; // Ensure this import is present
 export default function Navbar() {
   const tokenAddress = "DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA";
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(tokenAddress);
-    alert("Token address copied to clipboard!");
-  };
-
   return (
     <div className="navbar">
       <div className="navbar-left">
@@ -24,7 +19,7 @@ export default function Navbar() {
         <Link to="/roadmap" className="navbar-link">Roadmap</Link>
         <div className="search-bar-container">
           <input type="text" className="search-bar" value={tokenAddress} readOnly />
-          <button onClick={copyToClipboard} className="copy-button">Copy</button>
+          <a href="https://raydium.io/swap/?inputMint=sol&outputMint=DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA/" target="_blank" rel="noopener noreferrer" className="go-button">Go</a>
         </div>
       </div>
     </div>

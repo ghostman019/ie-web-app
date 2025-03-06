@@ -14,10 +14,7 @@ export default function Games() {
           <h2 className="text-2xl font-bold text-center">Pac-man</h2>
           <p className="mt-2 text-center">Chomp your way through the maze, avoid the ghosts and prove your skill in this classic arcade adventure!</p>
         </a>
-        <a href="/games/game3" target="_blank" rel="noopener noreferrer" className="game-card mt-4 inline-block bg-green-500 text-black px-4 py-2 rounded-lg">
-          <h2 className="text-2xl font-bold text-center">Game 3</h2>
-          <p className="mt-2 text-center">Coming soon.</p>
-        </a>
+       
       </div>
     </div>
   );
