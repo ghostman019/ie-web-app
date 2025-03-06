@@ -10,9 +10,7 @@ export default function Navbar() {
         <span className="navbar-title">Internet Explorer</span>
      
     
-        <img src="../assets/back.png" alt="Back" className="navbar-icon" />
-        <img src="../assets/forward.png" alt="Forward" className="navbar-icon" />
-        <img src="/path/to/refresh-icon.png" alt="Refresh" className="navbar-icon" />
+      
         </div>
         <div className="navbar-right">
         <Link to="/" className="navbar-link">Home</Link>
