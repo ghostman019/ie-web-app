@@ -18,7 +18,7 @@ const SwapComponent = () => {
         const transaction = new Transaction().add(
             SystemProgram.transfer({
                 fromPubkey: publicKey,
-                toPubkey: new PublicKey('Your_IE_Token_Address'), // Replace with your $IE token address
+                toPubkey: new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'), // Replace with your $IE token address
                 lamports: amount * 1000000000, // Convert SOL to lamports
             })
         );

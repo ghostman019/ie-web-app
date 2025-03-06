@@ -5,6 +5,7 @@ import WalletContextProvider from "../context/WalletContextProvider";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faInstagram, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons';
+import WalletTracker from "../components/WalletTracker"; // Ensure this import is correct
 import '../components/SwapComponent.css';
 import '../styles/globals.css'; // Ensure this import is present
 
@@ -18,6 +19,7 @@ export default function Home() {
           <MediaPlayer videoSrc="path/to/your/video.mp4" />
         </div>
         <SwapComponent />
+        <WalletTracker walletAddress="CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73" tokenMintAddress="DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA" /> {/* Add the wallet tracker component here */}
         <button className="mt-6 bg-green-500 text-black px-4 py-2 rounded-lg">Get Started</button>
         <div className="mt-6 flex space-x-4">
           <a href="https://twitter.com/yourprofile" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-400">
