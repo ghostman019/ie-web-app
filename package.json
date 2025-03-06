@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "browserify-zlib": "^0.2.0",
-    "react-app-rewired": "^2.1.8"
+    "react-app-rewired": "^2.2.1"
   },
   "author": "Your Name",
   "license": "ISC",
