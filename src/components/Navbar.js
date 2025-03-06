@@ -8,11 +8,13 @@ export default function Navbar() {
       <div className="navbar-left">
         <img src="../assets/internet-exp-logo.png" alt="IE Logo" className="navbar-logo" />
         <span className="navbar-title">Internet Explorer</span>
-      </div>
-      <div className="navbar-right">
+     
+    
         <img src="../assets/back.png" alt="Back" className="navbar-icon" />
         <img src="../assets/forward.png" alt="Forward" className="navbar-icon" />
         <img src="/path/to/refresh-icon.png" alt="Refresh" className="navbar-icon" />
+        </div>
+        <div className="navbar-right">
         <Link to="/" className="navbar-link">Home</Link>
         <Link to="/games" className="navbar-link">Games</Link>
         <Link to="/staking" className="navbar-link">Staking</Link>
