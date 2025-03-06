@@ -97,6 +97,31 @@ a:hover {
   }
 }
 
+/* Swap Component */
+.swap-component {
+  background: linear-gradient(45deg, var(--primary-bg), var(--secondary-bg));
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px var(--glow-color);
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.swap-component:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px var(--glow-color);
+}
+
+.swap-component h2 {
+  color: var(--highlight-color);
+  text-shadow: 0 0 5px var(--glow-color);
+  margin-bottom: 1rem;
+}
+
+.swap-component p {
+  color: var(--text-color);
+  margin-bottom: 1rem;
+}
+
 /* Game Hub Grid */
 .game-grid {
   display: grid;
