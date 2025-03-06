@@ -1,0 +1,48 @@
+.swap-component {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f0f0f0;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.swap-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.wallet-button {
+  margin-bottom: 20px;
+}
+
+.swap-input {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #808080;
+  border-radius: 5px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.swap-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.swap-button:hover {
+  background-color: #45a049;
+}

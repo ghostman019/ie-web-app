@@ -1,0 +1,55 @@
+.media-player {
+    width: 100%;
+    max-width: 640px;
+    border: 2px solid #000;
+    background-color: #c0c0c0;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    font-family: 'Tahoma', sans-serif;
+    margin: 20px auto; /* Center the media player horizontally */
+  }
+  
+  .media-player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #000080;
+    color: #fff;
+    padding: 5px;
+  }
+  
+  .media-player-buttons {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .media-player-button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #ff0000;
+    cursor: pointer;
+  }
+  
+  .media-player-button.minimize {
+    background-color: #ffff00;
+  }
+  
+  .media-player-button.maximize {
+    background-color: #00ff00;
+  }
+  
+  .media-player-title {
+    flex-grow: 1;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .media-player-body {
+    padding: 10px;
+    background-color: #000;
+  }
+  
+  .media-player-video {
+    width: 100%;
+    height: auto;
+  }

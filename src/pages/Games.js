@@ -1,36 +1,24 @@
-import React, { useState } from "react";
+import React from "react";
 
-const games = [
-  { name: "Retro FPS", url: "https://your-fps-game.com" },
-  { name: "Liero-Inspired", url: "https://your-liero-game.com" },
-  { name: "Copter", url: "https://your-copter-game.com" },
-];
-
-export default function Game() {
-  const [selectedGame, setSelectedGame] = useState(null);
-
+export default function Games() {
   return (
-    <div className="min-h-screen bg-gradient-to-r from-purple-900 to-pink-700 text-white flex flex-col items-center">
-      <h1 className="text-5xl font-bold mt-10">🎮 $IE Game Hub</h1>
-      <p className="text-lg text-gray-300 mt-2">Choose a game to play:</p>
-
-      <div className="mt-6 flex space-x-4">
-        {games.map((game, index) => (
-          <button
-            key={index}
-            onClick={() => setSelectedGame(game.url)}
-            className="bg-pink-500 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-pink-700 transition"
-          >
-            {game.name}
-          </button>
-        ))}
-      </div>
-
-      {selectedGame && (
-        <div className="mt-6 w-4/5 h-[500px] border-4 border-pink-400">
-          <iframe src={selectedGame} width="100%" height="100%" title="Game"></iframe>
+    <div className="min-h-screen bg-gradient-to-r from-blue-800 to-green-600 text-white flex flex-col justify-center items-center p-4">
+      <h1 className="text-5xl font-extrabold text-center">Games</h1>
+      <p className="mt-4 text-lg text-center">Explore and play our exciting games.</p>
+      <div className="game-grid mt-6">
+        <div className="game-card">
+          <h2 className="text-2xl font-bold text-center">Game 1</h2>
+          <p className="mt-2 text-center">Description of Game 1.</p>
         </div>
-      )}
+        <div className="game-card">
+          <h2 className="text-2xl font-bold text-center">Game 2</h2>
+          <p className="mt-2 text-center">Description of Game 2.</p>
+        </div>
+        <div className="game-card">
+          <h2 className="text-2xl font-bold text-center">Game 3</h2>
+          <p className="mt-2 text-center">Description of Game 3.</p>
+        </div>
+      </div>
     </div>
   );
 }

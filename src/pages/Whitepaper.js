@@ -5,7 +5,7 @@ export default function Whitepaper() {
   const [content, setContent] = useState('');
 
   useEffect(() => {
-    fetch('https://github.com/MichaelMireku/INTERNET-EXPLORER-sol/blob/main/README.md')
+    fetch('https://raw.githubusercontent.com/MichaelMireku/INTERNET-EXPLORER-sol/main/README.md')
       .then((response) => response.text())
       .then((text) => setContent(text));
   }, []);
@@ -19,5 +19,3 @@ export default function Whitepaper() {
     </div>
   );
 }
-
-https://github.com/MichaelMireku/INTERNET-EXPLORER-sol/blob/main/README.md
