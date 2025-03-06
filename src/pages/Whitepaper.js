@@ -12,9 +12,9 @@ export default function Whitepaper() {
   }, []);
 
   return (
-    <div className="whitepaper-container padding-container min-h-screen bg-white text-black flex flex-col justify-center items-center">
-      <h1 className="text-4xl font-bold">Whitepaper</h1>
-      <div className="mt-4 p-4 max-w-4xl">
+    <div className="whitepaper-container padding-container min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col justify-center items-center p-4">
+      <h1 className="text-4xl font-bold text-center">Whitepaper</h1>
+      <div className="mt-4 p-4 max-w-4xl bg-white text-black rounded-lg shadow-lg">
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
     </div>

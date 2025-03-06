@@ -16,7 +16,7 @@ export default function Home() {
         <h1 className="text-5xl font-extrabold text-center">Welcome to $IE</h1>
         <p className="mt-4 text-lg text-center">The ultimate vaporwave meme coin.</p>
         <div className="w-full flex justify-center">
-          <MediaPlayer videoSrc="../assets/music.mp4" />
+          <MediaPlayer videoSrc="/assets/music.mp4" /> {/* Ensure the video path is correct */}
         </div>
         <SwapComponent />
         <WalletTracker walletAddress="CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73" tokenMintAddress="DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA" /> {/* Add the wallet tracker component here */}

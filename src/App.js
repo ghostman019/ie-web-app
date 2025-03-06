@@ -12,15 +12,19 @@ import './styles/globals.css'; // Ensure this import is present
 function App() {
   return (
     <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/games" element={<Games />} />
-        <Route path="/staking" element={<Staking />} />
-        <Route path="/whitepaper" element={<Whitepaper />} />
-        <Route path="/roadmap" element={<Roadmap />} />
-      </Routes>
-      <Footer />
+      <div id="root">
+        <Navbar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/games" element={<Games />} />
+            <Route path="/staking" element={<Staking />} />
+            <Route path="/whitepaper" element={<Whitepaper />} />
+            <Route path="/roadmap" element={<Roadmap />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
     </Router>
   );
 }
