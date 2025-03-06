@@ -1,4 +1,5 @@
 import React from "react";
+import '../styles/globals.css'; // Ensure this import is present
 
 const roadmapData = [
   {
@@ -29,7 +30,7 @@ const roadmapData = [
 
 export default function Roadmap() {
   return (
-    <div className="min-h-screen bg-gradient-to-r from-purple-900 to-indigo-900 text-white flex flex-col items-center">
+    <div className="roadmap-container padding-container min-h-screen bg-gradient-to-r from-purple-900 to-indigo-900 text-white flex flex-col items-center">
       <h1 className="text-5xl font-bold mt-10">🚀 $IE Roadmap</h1>
       <div className="mt-10 w-4/5 md:w-3/5 border-l-4 border-pink-400">
         {roadmapData.map((item, index) => (

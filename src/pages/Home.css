@@ -1,0 +1,13 @@
+.home-container {
+    padding-left: 20px; /* Add padding to the left side */
+    padding-right: 20px; /* Add padding to the right side */
+  }
+  
+  .home-container h1,
+  .home-container p,
+  .home-container .wallet-button,
+  .home-container .swap-component,
+  .home-container .mt-6 {
+    padding-left: 20px; /* Add padding to the left side */
+    padding-right: 20px; /* Add padding to the right side */
+  }

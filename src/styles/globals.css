@@ -41,6 +41,12 @@ button:hover {
   box-shadow: 0 0 10px var(--glow-color);
 }
 
+/* Paddings */
+.padding-container {
+  padding-left: 20px; /* Add padding to the left side */
+  padding-right: 20px; /* Add padding to the right side */
+}
+
 /* Links */
 a {
   color: var(--highlight-color);

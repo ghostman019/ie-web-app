@@ -1,16 +1,11 @@
 import React from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import '../styles/globals.css'; // Ensure this import is present
 
 export default function Staking() {
-  const { publicKey } = useWallet();
-
   return (
-    <div className="min-h-screen bg-black text-green-300 flex flex-col justify-center items-center p-4">
-      <h1 className="text-4xl text-center">Stake Your $IE</h1>
-      <p className="mt-2 text-center">Connect your Solana wallet to start staking.</p>
-      <button className="mt-6 bg-green-500 text-black px-4 py-2 rounded-lg">
-        {publicKey ? `Staking with: ${publicKey.toBase58()}` : "Connect Wallet"}
-      </button>
+    <div className="staking-container padding-container min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col justify-center items-center p-4">
+      <h1 className="text-5xl font-extrabold text-center">Staking</h1>
+      <p className="mt-4 text-lg text-center">Stake your tokens and earn rewards.</p>
     </div>
   );
 }

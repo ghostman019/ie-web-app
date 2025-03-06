@@ -6,11 +6,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faInstagram, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons';
 import '../components/SwapComponent.css';
+import '../styles/globals.css'; // Ensure this import is present
 
 export default function Home() {
   return (
     <WalletContextProvider>
-      <div className="min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col justify-center items-center p-4">
+      <div className="home-container padding-container min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col justify-center items-center p-4">
         <h1 className="text-5xl font-extrabold text-center">Welcome to $IE</h1>
         <p className="mt-4 text-lg text-center">The ultimate vaporwave meme coin.</p>
         <div className="w-full flex justify-center">
