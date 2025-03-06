@@ -1,0 +1,302 @@
+:root {
+	--shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+* {
+	box-sizing: border-box;
+	font-family: monospace;
+	user-select: none;
+}
+
+*:focus {
+	outline: none;
+}
+
+body {
+	margin: 0px;
+	height: 100vh;
+	background: #111111;
+	color: rgba(255, 255, 255, 0.8);
+}
+
+lg {
+	display: block;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 9999;
+	background: rgba(255, 255, 255, 0.7);
+	color: black;
+}
+
+.fixed-full {
+	position: fixed;
+	top: 0;
+	left: 0;
+}
+
+.flex {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#main {
+	background: white;
+}
+
+.game-window {
+	width: 100%;
+	height: 100%;
+	display: none;
+	opacity: 0;
+	transition: opacity 0.2s;
+}
+
+.game-window .message {
+	width: 100%;
+	height: 100%;
+	bottom: 0px;
+	background: rgba(0, 0, 0, 0.6);
+	font-weight: 800;
+	color: white;
+	z-index: 103;
+}
+
+.game-window .message #msgElm {
+	font-size: 17px;
+	text-align: center;
+	transition: transform 0.2s, opacity 0.2s;
+}
+
+.game-window canvas {
+	bottom: 0;
+	right: 0;
+	z-index: 99;
+}
+
+.game-window #pause_btn {
+	position: fixed;
+	top: 10px;
+	width: 30px;
+	left: calc(50% - 15px);
+	z-index: 101;
+	background: white;
+	border-radius: 6px;
+}
+
+.game-window .score {
+	position: fixed;
+	top: 0;
+	right: 0;
+	width: 60px;
+	height: 60px;
+	background: rgba(255, 255, 255, 0.8);
+	border-radius: 0px 0px 0px 10px;
+	font-weight: 800;
+	font-size: 18px;
+	z-index: 100;
+	color: black;
+	box-shadow: var(--shadow);
+}
+
+.game-window .pause-menu {
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background: rgba(0, 0, 0, 0.6);
+	z-index: 102;
+	display: none;
+	opacity: 0;
+	transition: opacity 0.2s;
+	color: black;
+}
+
+.game-window .pause-menu .main {
+	position: fixed;
+	width: 80%;
+	height: 150px;
+	background: white;
+	top: calc(50% - 150px/2);
+	left: calc(50% - 80%/2);
+	border-radius: 8px;
+	box-shadow: var(--shadow);
+	color: black;
+}
+
+.game-window .pause-menu .main .HS-text {
+	width: 100%;
+	height: 50%;
+	font-weight: 800;
+	font-size: 22px;
+	color: black;
+}
+
+.game-window .pause-menu .main .HS-text label {
+	margin-left: 8px;
+}
+
+.game-window .pause-menu .main .ic-cont {
+	width: 100%;
+	height: 50%;
+}
+
+.game-window .pause-menu .main .ic-cont img {
+	height: 40%;
+	margin: 0px 30px;
+}
+
+.home-window {
+	width: 100%;
+	height: 100%;
+	transition: opacity 0.2s;
+}
+
+.home-window h1 {
+	margin: 100px 0px;
+	margin-bottom: 130px;
+	width: 100%;
+	text-align: center;
+	font-size: 32px;
+}
+
+.home-window .menu {
+	width: 100%;
+	text-align: center;
+}
+
+
+.home-window .menu a {
+	display: block;
+	text-decoration: none;
+	font-weight: 800;
+	font-size: 16px;
+	margin: 50px 0px;
+	transition: transform 0.2s;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.home-window .menu a label {
+	position: absolute;
+	right: 20px;
+	background: #959595;
+	padding: 5px;
+	min-width: 25px;
+	height: 25px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 4px;
+	transition: opacity 0.2s;
+}
+
+.home-window .menu a:hover {
+	transform: scale(1.5);
+}
+.home-window .menu a:hover label {
+	opacity: 0;
+}
+.home-window .menu p {
+	font-weight: 700;
+	opacity: 0.6;
+}
+
+.home-window .social {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	position: absolute;
+	bottom: 15px;
+	left: 0;
+}
+
+.home-window .social img {
+	width: 25px;
+	opacity: 0.6;
+	margin: 0px 15px;
+	filter: invert(100%);
+}
+
+.home-window .watermark {
+	position: absolute;
+	bottom: 10px;
+	left: 10px;
+	font-weight: 800;
+	font-size: 10px;
+	opacity: 0.3;
+}
+
+
+.settings-window {
+	z-index: 999;
+	width: 100%;
+	height: 100%;
+	background: #212121;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: opacity 0.2s;
+	display: none;
+	opacity: 0;
+}
+.settings-window .close {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	width: 40px;
+	filter: invert(100%);
+	cursor: pointer;
+	transition: transform 0.2s;
+}
+
+.settings-window .close {
+	transform: scale(1.1);
+}
+
+.settings-window .center {
+	width: 90%;
+	text-align: center;
+}
+.settings-window .center .inputs {
+	display: block;
+	height: 40px;
+	width:80%;
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin: 10px auto;
+	font-weight: 800;
+}
+.settings-window .center .inputs input , .settings-window .center .inputs button{
+	position: absolute;
+	right: 0;
+}
+.settings-window .center .inputs button {
+	font-weight: 700;
+	border-radius: 4px;
+	background: #BABABA;
+	color: #212121;
+	border: none;
+	padding: 4px;
+	font-size: 12px;
+	transition: background 0.2s , color 0.2s;
+}
+.settings-window .center .inputs button:active {
+	background: #AA0000;
+	color: white;
+}
+
+.ic-cont img {
+	transition: transform 0.2s;
+	cursor: pointer;
+}
+
+.ic-cont img:hover {
+	transform: scale(1.1);
+}

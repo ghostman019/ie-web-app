@@ -154,6 +154,25 @@ footer {
   margin-top: auto;
 }
 
+/* Social Media Links */
+.social-media-links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 1rem;
+}
+
+.social-media-links a {
+  color: var(--highlight-color);
+  font-size: 2rem;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.social-media-links a:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 10px var(--glow-color);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .text-5xl {
