@@ -1,37 +1,64 @@
 .file-upload {
-    margin: 20px;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    text-align: center;
+  margin: 20px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.file-upload h2 {
+  font-size: 1.5rem; /* Reduced heading size */
+  margin-bottom: 10px;
+}
+
+.file-upload input {
+  margin-bottom: 10px;
+  padding: 5px; /* Added padding */
+  font-size: 14px; /* Reduced text size */
+}
+
+.file-upload button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px; /* Reduced text size */
+}
+
+.file-upload button:hover {
+  background-color: #0056b3;
+}
+
+.file-upload p {
+  font-size: 14px; /* Reduced text size */
+  padding: 5px; /* Added padding */
+}
+
+.image-preview-container {
+  padding: 20px;
+  background-color: #1a1a1a;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.image-preview {
+  max-width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+@media (max-width: 768px) {
+  .file-upload {
+    padding: 10px;
   }
-  
-  .file-upload h2 {
-    font-size: 1.5rem; /* Reduced heading size */
-    margin-bottom: 10px;
+
+  .image-preview-container {
+    padding: 10px;
   }
-  
-  .file-upload input {
-    margin-bottom: 10px;
-    padding: 5px; /* Added padding */
-    font-size: 14px; /* Reduced text size */
-  }
-  
-  .file-upload button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px; /* Reduced text size */
-  }
-  
-  .file-upload button:hover {
-    background-color: #0056b3;
-  }
-  
-  .file-upload p {
-    font-size: 14px; /* Reduced text size */
-    padding: 5px; /* Added padding */
-  }
+}
