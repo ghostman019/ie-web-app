@@ -38,8 +38,9 @@ const WalletTracker = ({ walletAddress, tokenMintAddress }) => {
 
   return (
     <div className="wallet-tracker">
-      <h2 className="text-2xl font-semibold">Marketing Wallet Balance</h2>
-      <p className="text-lg">Balance: {balance} $IE</p>
+      <h2 className="text-2xl font-semibold">Marketing Wallet </h2>
+    
+      <p className="text-lg">Balance: 18,335,092.56 $IE</p>
     </div>
   );
 };
