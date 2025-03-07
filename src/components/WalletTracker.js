@@ -36,11 +36,23 @@ const WalletTracker = ({ walletAddress, tokenMintAddress }) => {
     return () => clearInterval(interval);
   }, [walletAddress, tokenMintAddress]);
 
+  const handleCopyAndRedirect = () => {
+    navigator.clipboard.writeText(walletAddress).then(() => {
+      window.open(`https://solscan.io/account/${walletAddress}`, '_blank');
+    });
+  };
+
   return (
-    <div className="wallet-tracker">
-      <h2 className="text-2xl font-semibold">Marketing Wallet </h2>
-    
-      <p className="text-lg">Balance: 18,335,092.56 $IE</p>
+    <div className="wallet-tracker p-4 bg-gray-800 rounded-lg shadow-lg text-white">
+      <h2 className="text-2xl font-semibold mb-2">Marketing Wallet</h2>
+     
+      <p className="text-lg mt-2">Balance: 18,335,092.55 $IE</p>
+      <button
+        onClick={handleCopyAndRedirect}
+        className="mt-4 bg-blue-500 text-black px-4 py-2 rounded-lg"
+      >
+        Copy MW Address & Go to Solscan
+      </button>
     </div>
   );
 };
