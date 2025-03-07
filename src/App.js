@@ -7,6 +7,7 @@ import Games from './pages/Games';
 import Staking from './pages/Staking';
 import Whitepaper from './pages/Whitepaper';
 import Roadmap from './pages/Roadmap';
+import Internet15 from './pages/Internet15';
 import './styles/globals.css'; // Ensure this import is present
 
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
@@ -48,6 +49,7 @@ function App() {
                   <Route path="/staking" element={<Staking />} />
                   <Route path="/whitepaper" element={<Whitepaper />} />
                   <Route path="/roadmap" element={<Roadmap />} />
+                  <Route path="/internet15" element={<Internet15 />} />
                 </Routes>
               </main>
               <Footer />
