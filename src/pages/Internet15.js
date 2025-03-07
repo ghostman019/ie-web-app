@@ -1,5 +1,5 @@
 import React from 'react';
-import FileUpload from '../components/FileUpload';
+import FileUpload from '../components/FileUpload'; // Import the FileUpload component 
 
 const Internet15 = () => {
   return (

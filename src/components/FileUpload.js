@@ -15,11 +15,17 @@ const FileUpload = () => {
 
   // Handle JWK input change
   const handleJwkChange = (event) => {
+    const file = event.target.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
-      setJwk(JSON.parse(e.target.result));
+      try {
+        const jwk = JSON.parse(e.target.result);
+        setJwk(jwk);
+      } catch (error) {
+        console.error('Invalid JWK file:', error);
+      }
     };
-    reader.readAsText(event.target.files[0]);
+    reader.readAsText(file);
   };
 
   // Apply vaporwave coloring effect to the image
