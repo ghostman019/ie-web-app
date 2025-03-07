@@ -35,8 +35,11 @@
     "vm-browserify": "^1.1.2"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.20",
     "browserify-zlib": "^0.2.0",
-    "react-app-rewired": "^2.2.1"
+    "postcss": "^8.5.3",
+    "react-app-rewired": "^2.2.1",
+    "tailwindcss": "^4.0.12"
   },
   "author": "Your Name",
   "license": "ISC",

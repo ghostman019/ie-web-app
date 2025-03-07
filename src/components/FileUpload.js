@@ -7,6 +7,7 @@ const FileUpload = () => {
   const [file, setFile] = useState(null);
   const [arweaveHash, setArweaveHash] = useState('');
   const [vaporwaveContent, setVaporwaveContent] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
 
   // Handle file input change
   const handleFileChange = (event) => {
@@ -103,6 +104,11 @@ const FileUpload = () => {
               console.error('Error uploading file to Arweave:', response);
             }
           }
+
+          // Create download URL for the modified content
+          const blob = new Blob([data], { type: contentType });
+          const url = URL.createObjectURL(blob);
+          setDownloadUrl(url);
         };
 
         if (file.type.startsWith('image/') || file.type === 'text/html') {
@@ -142,6 +148,13 @@ const FileUpload = () => {
             title="Vaporwave Preview"
             className="mt-2 w-full h-64 border border-gray-300 rounded"
           />
+        </div>
+      )}
+      {downloadUrl && (
+        <div className="mt-4">
+          <a href={downloadUrl} download={file.name} className="bg-green-500 text-black px-4 py-2 rounded-lg">
+            Download Preview
+          </a>
         </div>
       )}
       {arweaveHash && (

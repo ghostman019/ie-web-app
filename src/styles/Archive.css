@@ -1,0 +1,36 @@
+.archive {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: center;
+  }
+  
+  .archive h2 {
+    font-size: 1.5rem; /* Reduced heading size */
+    margin-bottom: 10px;
+  }
+  
+  .archive input {
+    margin-bottom: 10px;
+    padding: 5px; /* Added padding */
+    font-size: 14px; /* Reduced text size */
+  }
+  
+  .archive ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .archive li {
+    margin-bottom: 10px;
+  }
+  
+  .archive a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .archive a:hover {
+    text-decoration: underline;
+  }
