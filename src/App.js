@@ -9,23 +9,53 @@ import Whitepaper from './pages/Whitepaper';
 import Roadmap from './pages/Roadmap';
 import './styles/globals.css'; // Ensure this import is present
 
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import {
+  ConnectionProvider,
+  WalletProvider,
+} from '@solana/wallet-adapter-react';
+import {
+  WalletModalProvider,
+  WalletMultiButton,
+} from '@solana/wallet-adapter-react-ui';
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+} from '@solana/wallet-adapter-wallets';
+import { clusterApiUrl } from '@solana/web3.js';
+import '@solana/wallet-adapter-react-ui/styles.css'; // Ensure styles are imported
+
 function App() {
+  const network = WalletAdapterNetwork.Mainnet;
+  const endpoint = clusterApiUrl(network);
+
+  const wallets = [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+  ];
+
   return (
-    <Router>
-      <div id="root">
-        <Navbar />
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/games" element={<Games />} />
-            <Route path="/staking" element={<Staking />} />
-            <Route path="/whitepaper" element={<Whitepaper />} />
-            <Route path="/roadmap" element={<Roadmap />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </Router>
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          <Router>
+            <div id="root">
+              <Navbar />
+              <main className="main-content">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/games" element={<Games />} />
+                  <Route path="/staking" element={<Staking />} />
+                  <Route path="/whitepaper" element={<Whitepaper />} />
+                  <Route path="/roadmap" element={<Roadmap />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </Router>
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
   );
 }
 

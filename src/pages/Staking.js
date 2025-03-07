@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import '@solana/wallet-adapter-react-ui/styles.css'; // Ensure styles are imported
 
 export default function Staking() {
   const { publicKey, connected, sendTransaction } = useWallet();
