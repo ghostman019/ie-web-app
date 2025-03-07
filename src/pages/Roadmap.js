@@ -5,19 +5,19 @@ const roadmapData = [
   {
     phase: "Q1 2025",
     title: "Foundation ",
-    description: "Project kickoff, initial setup, basic website structure, file upload component, vaporwave effect, Arweave integration, searchable archive, wallet connect integration.",
+    description: "Project kickoff, initial setup, basic website structure,internet 1.5 minimum viable product, Arweave integration, searchable archive, wallet connect integration.",
     completed: false,
   },
   {
     phase: "Q2 2025",
     title: "Enhanced Features & User Experience",
-    description: "User profiles, content sharing, analytics dashboard, monetization options, improved UI/UX, mobile optimization.",
+    description: "User profiles, content sharing, analytics dashboard, monetization options, improved UI/UX,internet 1.5 alpha & beta.",
     completed: false,
   },
   {
     phase: "Q3 2025",
     title: "Community & Ecosystem Development",
-    description: "Community features, content moderation, partnerships, marketing campaigns, developer API.",
+    description: "Internet 1.5 production ready, community features, content moderation, partnerships, marketing campaigns, developer API.",
     completed: false,
   },
   {
@@ -31,7 +31,7 @@ const roadmapData = [
 export default function Roadmap() {
   return (
     <div className="roadmap-container padding-container min-h-screen flex flex-col items-center">
-      <h1 className="text-4xl font-bold mt-10">🚀 Internet 1.5 Roadmap</h1>
+      <h1 className="text-4xl font-bold mt-10">🚀 $IE Roadmap</h1>
       <div className="mt-10 w-full md:w-4/5 lg:w-3/5">
         {roadmapData.map((item, index) => (
           <div key={index} className="mb-10 p-6 neon-border">
