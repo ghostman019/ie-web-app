@@ -46,13 +46,16 @@ const WalletTracker = ({ walletAddress, tokenMintAddress }) => {
     <div className="wallet-tracker p-4 bg-gray-800 rounded-lg shadow-lg text-white">
       <h2 className="text-2xl font-semibold mb-2">Marketing Wallet</h2>
      
-      <p className="text-lg mt-2">Balance: 18,335,092.55 $IE</p>
-      <button
-        onClick={handleCopyAndRedirect}
-        className="mt-4 bg-blue-500 text-black px-4 py-2 rounded-lg"
-      >
-        Copy MW Address & Go to Solscan
-      </button>
+      <p className="text-lg mt-2 text-center">Balance: 18,335,092.55 $IE</p>
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={handleCopyAndRedirect}
+          className="bg-blue-500 text-black px-4 py-2 rounded-lg"
+          style={{ display: 'block', margin: '0 auto' }}
+        >
+          Copy MW Address & Go to Solscan
+        </button>
+      </div>
     </div>
   );
 };
