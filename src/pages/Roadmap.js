@@ -5,13 +5,13 @@ const roadmapData = [
   {
     phase: "Q1 2025",
     title: "Foundation ",
-    description: "Project kickoff, initial setup, basic website structure,internet 1.5 minimum viable product, Arweave integration, searchable archive, wallet connect integration.",
+    description: "Project kickoff, initial setup, basic website structure,Internet 1.5 minimum viable product, Arweave integration, searchable archive, wallet connect integration.",
     completed: false,
   },
   {
     phase: "Q2 2025",
     title: "Enhanced Features & User Experience",
-    description: "User profiles, content sharing, analytics dashboard, monetization options, improved UI/UX,internet 1.5 alpha & beta.",
+    description: "User profiles, content sharing, analytics dashboard, monetization options, improved UI/UX,Internet 1.5 alpha & beta.",
     completed: false,
   },
   {
