@@ -1,31 +1,16 @@
 import React, { useState } from 'react';
 import arweave from '../utils/ArweaveClient';
+import jwk from '../config'; // Import JWK from configuration file
 import '../styles/FileUpload.css';
 
 const FileUpload = () => {
   const [file, setFile] = useState(null);
   const [arweaveHash, setArweaveHash] = useState('');
-  const [jwk, setJwk] = useState(null);
   const [vaporwaveImage, setVaporwaveImage] = useState(null);
 
   // Handle file input change
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
-  };
-
-  // Handle JWK input change
-  const handleJwkChange = (event) => {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const jwk = JSON.parse(e.target.result);
-        setJwk(jwk);
-      } catch (error) {
-        console.error('Invalid JWK file:', error);
-      }
-    };
-    reader.readAsText(file);
   };
 
   // Apply vaporwave coloring effect to the image
@@ -50,7 +35,7 @@ const FileUpload = () => {
 
   // Handle file upload to Arweave
   const handleUpload = async () => {
-    if (file && jwk) {
+    if (file) {
       try {
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -77,7 +62,7 @@ const FileUpload = () => {
         console.error('Error uploading file to Arweave:', error);
       }
     } else {
-      console.error('File or JWK not provided');
+      console.error('File not provided');
     }
   };
 
@@ -87,10 +72,6 @@ const FileUpload = () => {
       <label className="block mb-2">
         Select File to Upload:
         <input type="file" onChange={handleFileChange} className="mb-4 block w-full text-black" /> {/* File input */}
-      </label>
-      <label className="block mb-2">
-        Select JWK File:
-        <input type="file" onChange={handleJwkChange} className="mb-4 block w-full text-black" /> {/* JWK input */}
       </label>
       <button onClick={handleUpload} className="bg-blue-500 text-black px-4 py-2 rounded-lg">
         Upload to Arweave
