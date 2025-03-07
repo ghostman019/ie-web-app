@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 export default function Staking() {
-  const { publicKey, connected } = useWallet();
+  const { publicKey, connected, sendTransaction } = useWallet();
   const [stakingBalance, setStakingBalance] = useState(0);
   const [rewards, setRewards] = useState(0);
+  const [stakeAmount, setStakeAmount] = useState('');
+  const [unstakeAmount, setUnstakeAmount] = useState('');
 
   useEffect(() => {
     if (connected && publicKey) {
@@ -15,27 +17,69 @@ export default function Staking() {
         const connection = new Connection('https://api.mainnet-beta.solana.com');
         const walletPublicKey = new PublicKey(publicKey);
 
-        // Fetch staking balance and rewards logic here
-        // This is a placeholder, replace with actual logic
-        const stakingBalance = 1000; // Replace with actual staking balance
-        const rewards = 50; // Replace with actual rewards
+        // Replace with actual logic to fetch staking balance and rewards
+        try {
+          // Example logic to fetch staking balance and rewards
+          const stakingBalance = await getStakingBalance(walletPublicKey, connection);
+          const rewards = await getRewards(walletPublicKey, connection);
 
-        setStakingBalance(stakingBalance);
-        setRewards(rewards);
+          setStakingBalance(stakingBalance);
+          setRewards(rewards);
+        } catch (error) {
+          console.error('Error fetching staking info:', error);
+        }
       };
 
       fetchStakingInfo();
     }
   }, [connected, publicKey]);
 
-  const handleStake = () => {
-    // Add staking logic here
-    console.log("Staking tokens...");
+  const handleStake = async () => {
+    if (!connected || !publicKey || !stakeAmount) return;
+
+    try {
+      const connection = new Connection('https://api.mainnet-beta.solana.com');
+      const walletPublicKey = new PublicKey(publicKey);
+
+      // Replace with actual staking logic
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: walletPublicKey,
+          toPubkey: new PublicKey('StakingProgramPublicKey'), // Replace with actual staking program public key
+          lamports: stakeAmount * 1000000, // Convert to lamports
+        })
+      );
+
+      const signature = await sendTransaction(transaction, connection);
+      await connection.confirmTransaction(signature, 'processed');
+      console.log('Staking transaction confirmed:', signature);
+    } catch (error) {
+      console.error('Error staking tokens:', error);
+    }
   };
 
-  const handleUnstake = () => {
-    // Add unstaking logic here
-    console.log("Unstaking tokens...");
+  const handleUnstake = async () => {
+    if (!connected || !publicKey || !unstakeAmount) return;
+
+    try {
+      const connection = new Connection('https://api.mainnet-beta.solana.com');
+      const walletPublicKey = new PublicKey(publicKey);
+
+      // Replace with actual unstaking logic
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: new PublicKey('StakingProgramPublicKey'), // Replace with actual staking program public key
+          toPubkey: walletPublicKey,
+          lamports: unstakeAmount * 1000000, // Convert to lamports
+        })
+      );
+
+      const signature = await sendTransaction(transaction, connection);
+      await connection.confirmTransaction(signature, 'processed');
+      console.log('Unstaking transaction confirmed:', signature);
+    } catch (error) {
+      console.error('Error unstaking tokens:', error);
+    }
   };
 
   return (
@@ -50,16 +94,46 @@ export default function Staking() {
           <p className="text-lg">Staking with: {publicKey.toBase58()}</p>
           <p className="mt-2">Staking Balance: {stakingBalance} $IE</p>
           <p className="mt-2">Rewards: {rewards} $IE</p>
-          <div className="mt-4 flex space-x-4 justify-center">
-            <button onClick={handleStake} className="bg-green-500 text-black px-4 py-2 rounded-lg">
-              Stake
-            </button>
-            <button onClick={handleUnstake} className="bg-red-500 text-black px-4 py-2 rounded-lg">
-              Unstake
-            </button>
+          <div className="mt-4 flex flex-col space-y-4 justify-center">
+            <div>
+              <input
+                type="number"
+                value={stakeAmount}
+                onChange={(e) => setStakeAmount(e.target.value)}
+                placeholder="Amount to stake"
+                className="bg-gray-700 text-white p-2 rounded-lg"
+              />
+              <button onClick={handleStake} className="bg-green-500 text-black px-4 py-2 rounded-lg ml-2">
+                Stake
+              </button>
+            </div>
+            <div>
+              <input
+                type="number"
+                value={unstakeAmount}
+                onChange={(e) => setUnstakeAmount(e.target.value)}
+                placeholder="Amount to unstake"
+                className="bg-gray-700 text-white p-2 rounded-lg"
+              />
+              <button onClick={handleUnstake} className="bg-red-500 text-black px-4 py-2 rounded-lg ml-2">
+                Unstake
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+// Placeholder functions to fetch staking balance and rewards
+// Replace these with actual logic to fetch data from your staking contract
+async function getStakingBalance(walletPublicKey, connection) {
+  // Replace with actual logic to fetch staking balance
+  return 1000; // Example balance
+}
+
+async function getRewards(walletPublicKey, connection) {
+  // Replace with actual logic to fetch rewards
+  return 50; // Example rewards
 }
