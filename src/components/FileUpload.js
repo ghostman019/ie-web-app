@@ -49,7 +49,7 @@ const FileUpload = () => {
 
   return (
     <div className="file-upload p-4 bg-gray-800 rounded-lg shadow-lg text-white">
-    
+      <h2 className="text-2xl font-semibold mb-2">Upload File to Internet 1.5</h2>
       <label className="block mb-2">
         Select File to Upload:
         <input type="file" onChange={handleFileChange} className="mb-4 block w-full text-black" /> {/* File input */}
