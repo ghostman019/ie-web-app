@@ -14,8 +14,7 @@ export default function Navbar() {
       <div className="navbar-right">
         <Link to="/" className="navbar-link">Home</Link>
         <Link to="/games" className="navbar-link">Games</Link>
-
-        <Link to="/whitepaper" className="navbar-link">Whitepaper</Link>
+        <Link to="/whitepaper" className="navbar-link">White Paper</Link>
         <Link to="/roadmap" className="navbar-link">Roadmap</Link>
         <Link to="/internet15" className="navbar-link">Internet 1.5 (MVP)</Link> {/* New link to Internet 1.5 page */}
         <div className="search-bar-container">

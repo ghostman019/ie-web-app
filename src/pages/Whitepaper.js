@@ -1,22 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeAddClasses from 'rehype-add-classes';
 import '../styles/globals.css'; // Ensure this import is present
 
-export default function Whitepaper() {
+const WhitePaper = () => {
   const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://raw.githubusercontent.com/MichaelMireku/INTERNET-EXPLORER-sol/main/README.md')
-      .then((response) => response.text())
-      .then((text) => setContent(text));
+    const fetchWhitePaper = async () => {
+      try {
+        const response = await fetch('https://raw.githubusercontent.com/MichaelMireku/INTERNET-EXPLORER-sol/main/README.md');
+        const text = await response.text();
+        setContent(text);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching white paper:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchWhitePaper();
   }, []);
 
   return (
-    <div className="whitepaper-container padding-container min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col justify-center items-center p-4">
-      <h1 className="text-4xl font-bold text-center">Whitepaper</h1>
-      <div className="mt-4 p-4 max-w-4xl bg-white text-black rounded-lg shadow-lg">
-        <ReactMarkdown>{content}</ReactMarkdown>
-      </div>
+    <div className="white-paper-container p-8 bg-gray-900 text-white min-h-screen">
+      <h1 className="text-5xl font-bold text-center mb-8">Internet 1.5 White Paper</h1>
+      {loading ? (
+        <p className="text-center text-lg">Loading...</p>
+      ) : (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[
+            rehypeRaw,
+            [rehypeAddClasses, { h1: 'text-5xl font-bold text-center mb-8', h2: 'text-3xl font-semibold mb-4', h3: 'text-2xl font-semibold mb-2', p: 'text-lg leading-relaxed mb-4', ul: 'list-disc list-inside text-lg leading-relaxed mb-4', li: 'mb-2' }]
+          ]}
+        >
+          {content}
+        </ReactMarkdown>
+      )}
     </div>
   );
-}
+};
+
+export default WhitePaper;

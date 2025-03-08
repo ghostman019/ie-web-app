@@ -173,6 +173,61 @@ footer {
   box-shadow: 0 0 10px var(--glow-color);
 }
 
+/* White Paper */
+.white-paper-container {
+  background: linear-gradient(to right, var(--primary-bg), var(--secondary-bg));
+  color: var(--text-color);
+  text-shadow: 0 0 8px var(--glow-color);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 0 15px var(--glow-color);
+}
+
+.white-paper-container h1,
+.white-paper-container h2,
+.white-paper-container h3 {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.white-paper-container p,
+.white-paper-container ul {
+  text-align: left;
+}
+
+.white-paper-container ul {
+  padding-left: 1.5rem;
+}
+
+.white-paper-content h2 {
+  font-size: 2.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.white-paper-content h3 {
+  font-size: 2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.white-paper-content p {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.white-paper-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.white-paper-content li {
+  margin-bottom: 0.5rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .text-5xl {
