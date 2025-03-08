@@ -59,6 +59,11 @@ const FileUpload = () => {
               } else {
                 console.error('Error uploading file to Arweave:', response);
               }
+
+              // Create download URL for the modified content
+              const blob = new Blob([data], { type: contentType });
+              const url = URL.createObjectURL(blob);
+              setDownloadUrl(url);
             };
             image.src = e.target.result;
           } else if (file.type === 'text/html') {
@@ -92,6 +97,11 @@ const FileUpload = () => {
             } else {
               console.error('Error uploading file to Arweave:', response);
             }
+
+            // Create download URL for the modified content
+            const blob = new Blob([data], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            setDownloadUrl(url);
           } else {
             data = e.target.result;
             const transaction = await arweave.createTransaction({ data }, jwk);
@@ -103,12 +113,12 @@ const FileUpload = () => {
             } else {
               console.error('Error uploading file to Arweave:', response);
             }
-          }
 
-          // Create download URL for the modified content
-          const blob = new Blob([data], { type: contentType });
-          const url = URL.createObjectURL(blob);
-          setDownloadUrl(url);
+            // Create download URL for the original content
+            const blob = new Blob([data], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            setDownloadUrl(url);
+          }
         };
 
         if (file.type.startsWith('image/') || file.type === 'text/html') {
