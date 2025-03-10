@@ -232,7 +232,7 @@ const FileUpload = () => {
         className="bg-blue-500 text-black px-4 py-2 rounded-lg"
         disabled={isUploading || !file}
       >
-        {isUploading ? 'Uploading...' : 'Upload to PermaStore'}
+        {isUploading ? 'Uploading...' : 'Upload to PermaStore (test)'}
       </button>
       
       {error && (
