@@ -7,7 +7,12 @@ import './SwapComponent.css'; // Ensure this import is present
 const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [amount, setAmount] = useState('');
-    const connection = new Connection('https://api.mainnet-beta.solana.com'); // Define the connection
+    
+    // ✅ Use Alchemy RPC from .env
+    const connection = new Connection('https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt');
+
+    // ✅ $IE Token Address (Replace with actual token address)
+    const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
 
     const handleSwap = async () => {
         if (!publicKey) {
@@ -15,21 +20,31 @@ const SwapComponent = () => {
             return;
         }
 
-        const transaction = new Transaction().add(
-            SystemProgram.transfer({
-                fromPubkey: publicKey,
-                toPubkey: new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'), // Replace with your $IE token address
-                lamports: amount * 1000000000, // Convert SOL to lamports
-            })
-        );
-
         try {
+            // ✅ Get recent blockhash
+            const { blockhash } = await connection.getLatestBlockhash();
+
+            // ✅ Create Transaction
+            const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: publicKey,
+                    toPubkey: ieTokenAddress, 
+                    lamports: parseFloat(amount) * 1e9, // Convert SOL to lamports
+                })
+            );
+
+            // ✅ Set recent blockhash & sign
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = publicKey;
+
+            // ✅ Send transaction
             const signature = await sendTransaction(transaction, connection);
             await connection.confirmTransaction(signature, 'processed');
-            alert('Swap successful!');
+
+            alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
         } catch (error) {
             console.error('Swap failed', error);
-            alert('Swap failed!');
+            alert('Swap failed! Check console for details.');
         }
     };
 

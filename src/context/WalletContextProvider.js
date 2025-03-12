@@ -9,7 +9,7 @@ require("@solana/wallet-adapter-react-ui/styles.css");
 const WalletContextProvider = ({ children }) => {
     // Use a more reliable RPC endpoint instead of the default rate-limited one
     const endpoint = useMemo(
-        () => "https://rpc.ankr.com/solana", // Alternative RPC
+        () => "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt", // Alternative RPC
         []
     );
 
