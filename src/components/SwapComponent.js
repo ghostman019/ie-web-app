@@ -8,10 +8,11 @@ const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [amount, setAmount] = useState('');
     
-    // ✅ Use Alchemy RPC from .env
-    const connection = new Connection('https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt');
+    // ✅ Use your Alchemy RPC URL
+    const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
+    const connection = new Connection(ALCHEMY_RPC_URL,"confirmed");
 
-    // ✅ $IE Token Address (Replace with actual token address)
+    // ✅ $IE Token Address (Replace with actual token address if needed)
     const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
 
     const handleSwap = async () => {
@@ -33,7 +34,7 @@ const SwapComponent = () => {
                 })
             );
 
-            // ✅ Set recent blockhash & sign
+            // ✅ Set transaction details
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = publicKey;
 
