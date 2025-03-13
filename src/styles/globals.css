@@ -63,8 +63,8 @@ button:hover {
 
 /* Paddings */
 .padding-container {
-  padding-left: 20px; /* Add padding to the left side */
-  padding-right: 20px; /* Add padding to the right side */
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 /* Links */
@@ -77,6 +77,101 @@ a {
 a:hover {
   color: #ff33cc;
   text-shadow: 0 0 5px var(--glow-color);
+}
+
+/* Wallet Info Table */
+.wallet-info-container {
+  background: linear-gradient(to right, var(--primary-bg), var(--secondary-bg));
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px var(--glow-color);
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.wallet-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.wallet-table td {
+  padding: 12px;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.wallet-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+.wallet-item:hover {
+  box-shadow: 0 0 10px var(--glow-color);
+}
+
+.rounded-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--highlight-color);
+}
+
+.ticker-position {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--highlight-color);
+}
+
+.price-position, .quantity-position, .cost-position {
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.small-text {
+  font-size: 0.85rem;
+}
+
+/* Tooltip Styling */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip-container .question-mark {
+  font-size: 1rem;
+  color: var(--highlight-color);
+  padding: 4px 8px;
+  border-radius: 50%;
+  background: rgba(255, 0, 255, 0.3);
+}
+
+.tooltip {
+  visibility: hidden;
+  width: 140px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 6px;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 
 /* Neon Borders */
@@ -97,139 +192,13 @@ a:hover {
   }
 }
 
-/* Swap Component */
-.swap-component {
-  background: linear-gradient(45deg, var(--primary-bg), var(--secondary-bg));
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 15px var(--glow-color);
-  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-}
-
-.swap-component:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 20px var(--glow-color);
-}
-
-.swap-component h2 {
-  color: var(--highlight-color);
-  text-shadow: 0 0 5px var(--glow-color);
-  margin-bottom: 1rem;
-}
-
-.swap-component p {
-  color: var(--text-color);
-  margin-bottom: 1rem;
-}
-
-/* Game Hub Grid */
-.game-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  padding: 20px;
-  justify-items: center;
-}
-
-/* Game Card */
-.game-card {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 15px;
-  text-align: center;
-  border-radius: 10px;
-  transition: all 0.3s ease-in-out;
-}
-
-.game-card:hover {
-  box-shadow: 0 0 15px var(--glow-color);
-  transform: scale(1.05);
-}
-
-/* Footer */
-footer {
-  background: linear-gradient(to right, #333, #666);
-  color: white;
-  text-align: center;
-  padding: 1rem;
-  margin-top: auto;
-}
-
-/* Social Media Links */
-.social-media-links {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 1rem;
-}
-
-.social-media-links a {
-  color: var(--highlight-color);
-  font-size: 2rem;
-  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-}
-
-.social-media-links a:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 10px var(--glow-color);
-}
-
-/* White Paper */
-.white-paper-container {
-  background: linear-gradient(to right, var(--primary-bg), var(--secondary-bg));
-  color: var(--text-color);
-  text-shadow: 0 0 8px var(--glow-color);
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 0 15px var(--glow-color);
-}
-
-.white-paper-container h1,
-.white-paper-container h2,
-.white-paper-container h3 {
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-align: center;
-}
-
-.white-paper-container p,
-.white-paper-container ul {
-  text-align: left;
-}
-
-.white-paper-container ul {
-  padding-left: 1.5rem;
-}
-
-.white-paper-content h2 {
-  font-size: 2.5rem;
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-}
-
-.white-paper-content h3 {
-  font-size: 2rem;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.white-paper-content p {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  margin-bottom: 1rem;
-}
-
-.white-paper-content ul {
-  list-style-type: disc;
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.white-paper-content li {
-  margin-bottom: 0.5rem;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
+  .wallet-item {
+    flex-direction: column;
+    align-items: center;
+  }
+
   .text-5xl {
     font-size: 2.5rem;
   }
