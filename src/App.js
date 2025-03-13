@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Games from './pages/Games';
-import WalletInfo from './pages/WalletInfo';
+import WalletInfoPage from './pages/WalletInfoPage';  // ✅ Keep only this import
 import Whitepaper from './pages/Whitepaper';
 import Roadmap from './pages/Roadmap';
 import Internet15 from './pages/Internet15';
@@ -46,7 +46,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/games" element={<Games />} />
-                  <Route path="/wallet-info" element={<WalletInfo />} />
+                  <Route path="/wallet-info-page" element={<WalletInfoPage />} />  {/* ✅ Fixed path */}
                   <Route path="/whitepaper" element={<Whitepaper />} />
                   <Route path="/roadmap" element={<Roadmap />} />
                   <Route path="/internet15" element={<Internet15 />} />
