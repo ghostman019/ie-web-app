@@ -73,7 +73,7 @@ h1 {
 .token-name {
     font-size: 18px;
     font-weight: bold;
-    color: #ffdd57;
+  
     margin-bottom: 5px;
 }
 
@@ -88,7 +88,7 @@ h1 {
 .loading-text {
     font-size: 18px;
     font-weight: bold;
-    color: #ffcc00;
+   
 }
 
 /* Mobile Responsive */
