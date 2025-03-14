@@ -8,6 +8,7 @@ const WalletInfoPage = () => {
     const { publicKey, connected } = useWallet();
     const [tokens, setTokens] = useState([]);
     const [loading, setLoading] = useState(false);
+
     const connection = new Connection("https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt");
 
     useEffect(() => {
@@ -32,7 +33,7 @@ const WalletInfoPage = () => {
                         balance: accountData.tokenAmount.uiAmount,
                     };
                 })
-                .filter((token) => token.balance > 0); // Only show tokens with balance
+                .filter((token) => token.balance > 0);
 
             setTokens(fetchedTokens);
         } catch (error) {
@@ -43,7 +44,7 @@ const WalletInfoPage = () => {
 
     return (
         <div className="wallet-container">
-            <h1>Wallet Information</h1>
+            <h1>Wallet Info</h1>
 
             {connected ? (
                 <>
@@ -55,24 +56,19 @@ const WalletInfoPage = () => {
                         <h2>Your Tokens</h2>
 
                         {loading ? (
-                            <p>Loading tokens...</p>
+                            <p className="loading-text">Fetching tokens...</p>
                         ) : tokens.length > 0 ? (
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Token</th>
-                                        <th>Balance</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {tokens.map((token, index) => (
-                                        <tr key={index}>
-                                            <td>{token.mint}</td>
-                                            <td>{token.balance}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <div className="token-grid">
+                                {tokens.map((token, index) => (
+                                    <div key={index} className="token-card">
+                                        <div className="token-icon">🔹</div>
+                                        <div className="token-details">
+                                            <h3 className="token-name">{token.mint.slice(0, 6)}...{token.mint.slice(-6)}</h3>
+                                            <p className="token-balance">{token.balance.toFixed(4)} Tokens</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <p>No tokens found.</p>
                         )}
