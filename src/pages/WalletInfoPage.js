@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { TOKEN_PROGRAM_ID, getAccount, getMint } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
-import "../styles/WalletInfoPage.css"; // Import CSS for better styling
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import "../styles/WalletInfoPage.css";
 
 const WalletInfoPage = () => {
     const { publicKey, connected } = useWallet();
     const [tokens, setTokens] = useState([]);
+    const [loading, setLoading] = useState(false);
     const connection = new Connection("https://api.mainnet-beta.solana.com");
 
     useEffect(() => {
@@ -16,29 +17,28 @@ const WalletInfoPage = () => {
     }, [connected, publicKey]);
 
     const fetchTokenAccounts = async () => {
+        setLoading(true);
         try {
             const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
                 publicKey,
                 { programId: TOKEN_PROGRAM_ID }
             );
 
-            const fetchedTokens = await Promise.all(
-                tokenAccounts.value.map(async (accountInfo) => {
+            const fetchedTokens = tokenAccounts.value
+                .map((accountInfo) => {
                     const accountData = accountInfo.account.data.parsed.info;
-                    const mint = new PublicKey(accountData.mint);
-                    const mintInfo = await getMint(connection, mint);
                     return {
-                        mint: mint.toBase58(),
+                        mint: accountData.mint,
                         balance: accountData.tokenAmount.uiAmount,
-                        decimals: mintInfo.decimals,
                     };
                 })
-            );
+                .filter((token) => token.balance > 0); // Only show tokens with balance
 
             setTokens(fetchedTokens);
         } catch (error) {
             console.error("Error fetching tokens:", error);
         }
+        setLoading(false);
     };
 
     return (
@@ -50,9 +50,13 @@ const WalletInfoPage = () => {
                     <p className="wallet-address">
                         <strong>Address:</strong> {publicKey?.toBase58()}
                     </p>
+
                     <div className="token-list">
                         <h2>Your Tokens</h2>
-                        {tokens.length > 0 ? (
+
+                        {loading ? (
+                            <p>Loading tokens...</p>
+                        ) : tokens.length > 0 ? (
                             <table>
                                 <thead>
                                     <tr>
