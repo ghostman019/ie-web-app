@@ -8,6 +8,7 @@ const WalletInfoPage = () => {
     const { publicKey, connected } = useWallet();
     const [tokens, setTokens] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [expandedToken, setExpandedToken] = useState(null);
 
     const connection = new Connection("https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt");
 
@@ -25,21 +26,53 @@ const WalletInfoPage = () => {
                 { programId: TOKEN_PROGRAM_ID }
             );
 
-            const fetchedTokens = tokenAccounts.value
-                .map((accountInfo) => {
-                    const accountData = accountInfo.account.data.parsed.info;
-                    return {
-                        mint: accountData.mint,
-                        balance: accountData.tokenAmount.uiAmount,
-                    };
-                })
-                .filter((token) => token.balance > 0);
+            const fetchedTokens = await Promise.all(
+                tokenAccounts.value
+                    .map(async (accountInfo) => {
+                        const accountData = accountInfo.account.data.parsed.info;
+                        const mint = accountData.mint;
+                        const balance = accountData.tokenAmount.uiAmount;
 
-            setTokens(fetchedTokens);
+                        if (balance > 0) {
+                            const metadata = await fetchTokenMetadata(mint);
+                            return {
+                                mint,
+                                balance,
+                                ...metadata
+                            };
+                        }
+                        return null;
+                    })
+            );
+
+            setTokens(fetchedTokens.filter(Boolean));
         } catch (error) {
             console.error("Error fetching tokens:", error);
         }
         setLoading(false);
+    };
+
+    const fetchTokenMetadata = async (mint) => {
+        try {
+            const response = await fetch(`https://token.jup.ag/info`);
+            const tokenInfo = await response.json();
+
+            if (tokenInfo[mint]) {
+                return {
+                    symbol: tokenInfo[mint].symbol || "UNKNOWN",
+                    name: tokenInfo[mint].name || "Unknown Token",
+                    image: tokenInfo[mint].logoURI || "",
+                    price: tokenInfo[mint].price || 0,
+                };
+            }
+        } catch (error) {
+            console.error("Error fetching token metadata:", error);
+        }
+        return { symbol: "UNKNOWN", name: "Unknown Token", image: "", price: 0 };
+    };
+
+    const toggleExpand = (mint) => {
+        setExpandedToken(expandedToken === mint ? null : mint);
     };
 
     return (
@@ -60,11 +93,20 @@ const WalletInfoPage = () => {
                         ) : tokens.length > 0 ? (
                             <div className="token-grid">
                                 {tokens.map((token, index) => (
-                                    <div key={index} className="token-card">
-                                        <div className="token-icon">🔹</div>
+                                    <div key={index} className="token-card" onClick={() => toggleExpand(token.mint)}>
+                                        {token.image ? (
+                                            <img src={token.image} alt={token.symbol} className="token-banner" />
+                                        ) : (
+                                            <div className="token-icon">🔹</div>
+                                        )}
                                         <div className="token-details">
-                                            <h3 className="token-name">{token.mint.slice(0, 6)}...{token.mint.slice(-6)}</h3>
-                                            <p className="token-balance">{token.balance.toFixed(4)} Tokens</p>
+                                            <h3 className="token-name">{token.symbol}</h3>
+                                            <p className="token-balance">{token.balance.toFixed(4)} {token.symbol}</p>
+                                            <p className="token-price">${(token.balance * token.price).toFixed(2)} USD</p>
+
+                                            {expandedToken === token.mint && (
+                                                <p className="token-full-name">{token.name}</p>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
