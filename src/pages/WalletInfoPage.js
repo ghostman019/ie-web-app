@@ -8,7 +8,7 @@ const WalletInfoPage = () => {
     const { publicKey, connected } = useWallet();
     const [tokens, setTokens] = useState([]);
     const [loading, setLoading] = useState(false);
-    const connection = new Connection("https://api.mainnet-beta.solana.com");
+    const connection = new Connection("https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt");
 
     useEffect(() => {
         if (connected && publicKey) {
