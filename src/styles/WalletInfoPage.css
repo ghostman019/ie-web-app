@@ -1,16 +1,17 @@
+/* Wallet Page Styles */
 .wallet-container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 40px auto;
     padding: 20px;
     background: #1a1a2e;
     color: #ffffff;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
     text-align: center;
 }
 
 h1 {
-    font-size: 24px;
+    font-size: 26px;
     margin-bottom: 15px;
 }
 
@@ -27,35 +28,75 @@ h1 {
 }
 
 .token-list h2 {
-    font-size: 20px;
+    font-size: 22px;
+    margin-bottom: 10px;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
+/* Token Grid */
+.token-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    justify-items: center;
+    margin-top: 15px;
 }
 
-th, td {
-    padding: 10px;
-    border: 1px solid #444;
-    text-align: left;
-}
-
-th {
-    background: #333;
-}
-
-td {
+/* Token Card */
+.token-card {
     background: #222;
+    border-radius: 12px;
+    padding: 15px;
+    width: 100%;
+    max-width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease-in-out;
 }
 
+.token-card:hover {
+    transform: scale(1.05);
+}
+
+/* Token Icon */
+.token-icon {
+    font-size: 30px;
+    margin-bottom: 8px;
+}
+
+/* Token Details */
+.token-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffdd57;
+}
+
+.token-balance {
+    font-size: 14px;
+    color: #ffffff;
+}
+
+/* Loading Text */
+.loading-text {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffcc00;
+}
+
+/* Mobile Responsive */
 @media (max-width: 600px) {
-    table {
+    .token-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+
+    .token-card {
+        max-width: 160px;
+    }
+
+    .token-name {
         font-size: 14px;
     }
 
-    th, td {
-        padding: 8px;
+    .token-balance {
+        font-size: 12px;
     }
 }
