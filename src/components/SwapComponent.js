@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection, Transaction } from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 
 const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
@@ -9,45 +9,14 @@ const SwapComponent = () => {
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [loading, setLoading] = useState(false);
     
-    const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
-    const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
+    const RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
+    const connection = new Connection(RPC_URL, "confirmed");
 
     // Token Addresses
     const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'; // $IE
     const solTokenAddress = 'So11111111111111111111111111111111111111112'; // SOL
 
-    useEffect(() => {
-        const fetchQuote = async () => {
-            if (!amount || parseFloat(amount) <= 0) {
-                setEstimatedIE(null);
-                return;
-            }
-            
-            try {
-                const response = await fetch(
-                    `https://quote-api.jup.ag/v6/quote?` +
-                    `inputMint=${solTokenAddress}&` +
-                    `outputMint=${ieTokenAddress}&` +
-                    `amount=${parseFloat(amount) * 1e9}&` + // Convert SOL to lamports
-                    `slippageBps=50` // 0.5% slippage (50 bps)
-                );
-                
-                const quote = await response.json();
-                if (quote?.outAmount) {
-                    setEstimatedIE(quote.outAmount / 1e9); // Convert to token decimals
-                } else {
-                    setEstimatedIE(null);
-                }
-            } catch (error) {
-                console.error("Failed to fetch quote", error);
-                setEstimatedIE(null);
-            }
-        };
-        
-        const debounceTimer = setTimeout(fetchQuote, 500);
-        return () => clearTimeout(debounceTimer);
-    }, [amount]);
-
+    // Fixed version of handleSwap
     const handleSwap = async () => {
         if (!publicKey) {
             alert('Please connect your wallet!');
@@ -68,7 +37,7 @@ const SwapComponent = () => {
                 `inputMint=${solTokenAddress}&` +
                 `outputMint=${ieTokenAddress}&` +
                 `amount=${parseFloat(amount) * 1e9}&` +
-                `slippageBps=50`
+                `slippageBps=50` // 0.5% slippage
             );
             const quote = await quoteResponse.json();
 
@@ -79,18 +48,28 @@ const SwapComponent = () => {
                 body: JSON.stringify({
                     quoteResponse: quote,
                     userPublicKey: publicKey.toString(),
-                    wrapAndUnwrapSol: true, // Handles SOL wrapping automatically
+                    wrapAndUnwrapSol: true,
                 }),
             });
             const swapResult = await swapResponse.json();
 
-            // 3. Send Transaction
+            // 3. Properly decode and send transaction
+            if (!swapResult.swapTransaction) {
+                throw new Error("No transaction returned from Jupiter API");
+            }
+
+            // Convert the swap transaction to Uint8Array
             const swapTransactionBuf = Buffer.from(swapResult.swapTransaction, 'base64');
-            const transaction = Transaction.from(swapTransactionBuf);
-            const signature = await sendTransaction(transaction, connection);
+            const transaction = Uint8Array.from(swapTransactionBuf);
             
-            // 4. Confirm Transaction
-            await connection.confirmTransaction(signature, 'confirmed');
+            // 4. Send and confirm transaction
+            const signature = await sendTransaction(transaction, connection);
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            
+            if (confirmation.value.err) {
+                throw new Error("Transaction failed");
+            }
+
             alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
             
         } catch (error) {
@@ -101,6 +80,7 @@ const SwapComponent = () => {
         }
     };
 
+    // ... (keep the rest of your component code the same)
     return (
         <div className="swap-component">
             <h2 className="swap-title">Swap SOL for $IE</h2>
