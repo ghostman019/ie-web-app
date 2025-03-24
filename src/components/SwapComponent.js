@@ -11,9 +11,9 @@ const SwapComponent = () => {
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
 
-    // ✅ $IE Token Address (Ensure it's a string)
-    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA';
-    const solTokenAddress = 'So11111111111111111111111111111111111111112'; // SOL
+    // ✅ $IE Token Address
+    const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
+    const outputMint = ieTokenAddress.toBase58(); // ✅ Convert PublicKey to String
 
     useEffect(() => {
         const fetchQuote = async () => {
@@ -21,11 +21,12 @@ const SwapComponent = () => {
                 setEstimatedIE(null);
                 return;
             }
+
             try {
-                const amountInLamports = Math.floor(parseFloat(amount) * 1e9); // Convert SOL to lamports
+                console.log(`Fetching quote for ${amount} SOL to ${outputMint}`);
 
                 const response = await fetch(
-                    `https://quote-api.jup.ag/v6/quote?inputMint=${solTokenAddress}&outputMint=${ieTokenAddress}&amount=${amountInLamports}&slippageBps=50`
+                    `https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${outputMint}&amount=${parseFloat(amount) * 1e9}&slippageBps=50`
                 );
                 
                 if (!response.ok) {
@@ -33,18 +34,21 @@ const SwapComponent = () => {
                 }
 
                 const quote = await response.json();
-                if (quote.outAmount) {
+                console.log("Jupiter Quote API Response:", quote);
+
+                if (quote && quote.outAmount) {
                     setEstimatedIE(quote.outAmount / 1e9); // Convert from lamports
                 } else {
                     setEstimatedIE(null);
                 }
             } catch (error) {
-                console.error("Failed to fetch quote", error);
+                console.error("Failed to fetch quote:", error);
                 setEstimatedIE(null);
             }
         };
 
-        fetchQuote();
+        const timeout = setTimeout(fetchQuote, 500); // ⏳ Debounce API calls
+        return () => clearTimeout(timeout);
     }, [amount]);
 
     const handleSwap = async () => {
@@ -60,11 +64,9 @@ const SwapComponent = () => {
                 return;
             }
 
-            const amountInLamports = Math.floor(solAmount * 1e9); // Convert SOL to lamports
-
-            // ✅ Fetch Best Swap Route from Jupiter
+            console.log("Fetching best swap route...");
             const response = await fetch(
-                `https://quote-api.jup.ag/v6/quote?inputMint=${solTokenAddress}&outputMint=${ieTokenAddress}&amount=${amountInLamports}&slippageBps=50`
+                `https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${outputMint}&amount=${solAmount * 1e9}&slippageBps=50`
             );
 
             if (!response.ok) {
@@ -72,41 +74,37 @@ const SwapComponent = () => {
             }
 
             const quote = await response.json();
-
             if (!quote.routes || quote.routes.length === 0) {
                 alert("No swap route found!");
                 return;
             }
 
-            // ✅ Fetch Swap Transaction from Jupiter
+            console.log("Fetching swap transaction...");
             const swapResponse = await fetch("https://quote-api.jup.ag/v6/swap", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     userPublicKey: publicKey.toBase58(),
-                    route: quote.routes[0],
+                    route: quote.routes[0],  // ✅ Use first available route
+                    wrapAndUnwrapSol: true   // ✅ Necessary for SOL swaps
                 }),
             });
 
             if (!swapResponse.ok) {
-                throw new Error(`Swap API error: ${swapResponse.status}`);
+                throw new Error(`Jupiter Swap API error: ${swapResponse.status}`);
             }
 
             const { swapTransaction } = await swapResponse.json();
-            if (!swapTransaction) {
-                throw new Error("Swap transaction missing from response.");
-            }
-
             const transaction = Buffer.from(swapTransaction, "base64");
 
-            // ✅ Send Transaction
+            console.log("Sending transaction to Solana network...");
             const signature = await sendTransaction(transaction, connection);
             await connection.confirmTransaction(signature, 'processed');
 
             alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
         } catch (error) {
-            console.error('Swap failed', error);
-            alert(`Swap failed! Error: ${error.message}`);
+            console.error('Swap failed:', error);
+            alert('Swap failed! Check console for details.');
         }
     };
 
