@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { PublicKey, Transaction, SystemProgram, Connection } from '@solana/web3.js';
-import './SwapComponent.css'; // Ensure this import is present
+import { PublicKey, Connection } from '@solana/web3.js';
 
 const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [amount, setAmount] = useState('');
     
-    // ✅ Use your Alchemy RPC URL
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
-    const connection = new Connection(ALCHEMY_RPC_URL,"confirmed");
+    const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
 
-    // ✅ $IE Token Address (Replace with actual token address if needed)
+    // ✅ $IE Token Address
     const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
 
     const handleSwap = async () => {
@@ -22,23 +20,35 @@ const SwapComponent = () => {
         }
 
         try {
-            // ✅ Get recent blockhash
-            const { blockhash } = await connection.getLatestBlockhash();
+            const solAmount = parseFloat(amount);
+            if (solAmount <= 0) {
+                alert("Enter a valid amount!");
+                return;
+            }
 
-            // ✅ Create Transaction
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: publicKey,
-                    toPubkey: ieTokenAddress, 
-                    lamports: parseFloat(amount) * 1e9, // Convert SOL to lamports
-                })
-            );
+            // ✅ Fetch Best Swap Route from Jupiter
+            const response = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${ieTokenAddress}&amount=${solAmount * 1e9}&slippageBps=50`);
+            const quote = await response.json();
 
-            // ✅ Set transaction details
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = publicKey;
+            if (!quote) {
+                alert("No swap route found!");
+                return;
+            }
 
-            // ✅ Send transaction
+            // ✅ Fetch Swap Transaction from Jupiter
+            const swapResponse = await fetch("https://quote-api.jup.ag/v6/swap", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userPublicKey: publicKey.toBase58(),
+                    route: quote.routes[0],
+                }),
+            });
+
+            const { swapTransaction } = await swapResponse.json();
+            const transaction = Buffer.from(swapTransaction, "base64");
+
+            // ✅ Send Transaction
             const signature = await sendTransaction(transaction, connection);
             await connection.confirmTransaction(signature, 'processed');
 
