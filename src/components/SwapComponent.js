@@ -21,7 +21,7 @@ const SwapComponent = () => {
                 return;
             }
             try {
-                const response = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${ieTokenAddress}&amount=${parseFloat(amount) * 1e9}&slippageBps=50`);
+                const response = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA}&amount=${parseFloat(amount) * 1e9}&slippageBps=50`);
                 const quote = await response.json();
                 if (quote && quote.outAmount) {
                     setEstimatedIE(quote.outAmount / 1e9); // Convert to token decimals
