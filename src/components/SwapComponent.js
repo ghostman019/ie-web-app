@@ -9,7 +9,6 @@ const SwapComponent = () => {
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [loading, setLoading] = useState(false);
     
-    // Configuration (No API key needed for free tier)
     const RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(RPC_URL, "confirmed");
 
@@ -17,143 +16,99 @@ const SwapComponent = () => {
     const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'; // $IE
     const solTokenAddress = 'So11111111111111111111111111111111111111112'; // SOL
 
-    // Free tier endpoints (no API key)
-    const JUPITER_QUOTE_URL = 'https://api.jup.ag/swap/v1/quote';
-    const JUPITER_SWAP_URL = 'https://api.jup.ag/swap/v1/swap';
-
-    useEffect(() => {
-        const fetchQuote = async () => {
-            if (!amount || parseFloat(amount) <= 0) {
-                setEstimatedIE(null);
-                return;
-            }
-            
-            try {
-                const response = await fetch(
-                    `${JUPITER_QUOTE_URL}?` +
-                    `inputMint=${solTokenAddress}&` +
-                    `outputMint=${ieTokenAddress}&` +
-                    `amount=${parseFloat(amount) * 1e9}&` + // SOL → lamports
-                    `slippageBps=50` // 0.5% slippage
-                );
-                
-                if (!response.ok) throw new Error(`Failed to fetch quote: ${response.status}`);
-                const quote = await response.json();
-                setEstimatedIE(quote?.outAmount ? (quote.outAmount / 1e9).toFixed(4) : null);
-            } catch (error) {
-                console.error("Quote error:", error);
-                setEstimatedIE(null);
-            }
-        };
-        
-        const debounceTimer = setTimeout(fetchQuote, 500);
-        return () => clearTimeout(debounceTimer);
-    }, [amount]);
-
+    // Fixed version of handleSwap
     const handleSwap = async () => {
-        if (!publicKey) return alert('Please connect your wallet!');
-        if (!amount || parseFloat(amount) <= 0) return alert("Enter a valid SOL amount");
+        if (!publicKey) {
+            alert('Please connect your wallet!');
+            return;
+        }
+
+        if (!amount || parseFloat(amount) <= 0) {
+            alert("Enter a valid SOL amount!");
+            return;
+        }
 
         setLoading(true);
         
         try {
             // 1. Get Quote
             const quoteResponse = await fetch(
-                `${JUPITER_QUOTE_URL}?` +
+                `https://quote-api.jup.ag/v6/quote?` +
                 `inputMint=${solTokenAddress}&` +
                 `outputMint=${ieTokenAddress}&` +
                 `amount=${parseFloat(amount) * 1e9}&` +
-                `slippageBps=50`
+                `slippageBps=50` // 0.5% slippage
             );
-            
-            if (!quoteResponse.ok) throw new Error(await quoteResponse.text());
             const quote = await quoteResponse.json();
 
-            // 2. Build Swap Transaction
-            const swapResponse = await fetch(JUPITER_SWAP_URL, {
+            // 2. Get Swap Transaction
+            const swapResponse = await fetch('https://api.jup.ag/v6/swap', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     quoteResponse: quote,
                     userPublicKey: publicKey.toString(),
                     wrapAndUnwrapSol: true,
-                    // Free tier parameters
-                    dynamicComputeUnitLimit: true,
-                    asLegacyTransaction: false // Recommended for new API
                 }),
             });
-            
-            if (!swapResponse.ok) throw new Error(await swapResponse.text());
             const swapResult = await swapResponse.json();
 
-            // 3. Send Transaction
-            const rawTransaction = Buffer.from(swapResult.swapTransaction, 'base64');
-            const signature = await sendTransaction(
-                new Uint8Array(rawTransaction),
-                connection,
-                { skipPreflight: false }
-            );
+            // 3. Properly decode and send transaction
+            if (!swapResult.swapTransaction) {
+                throw new Error("No transaction returned from Jupiter API");
+            }
 
-            console.log("Swap submitted:", signature);
-            alert(`Swap initiated! Track: https://solscan.io/tx/${signature}`);
+            // Convert the swap transaction to Uint8Array
+            const swapTransactionBuf = Buffer.from(swapResult.swapTransaction, 'base64');
+            const transaction = Uint8Array.from(swapTransactionBuf);
+            
+            // 4. Send and confirm transaction
+            const signature = await sendTransaction(transaction, connection);
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            
+            if (confirmation.value.err) {
+                throw new Error("Transaction failed");
+            }
+
+            alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
             
         } catch (error) {
             console.error('Swap failed:', error);
-            alert(`Error: ${error.message.split('\n')[0]}`); // Show first line of error
+            alert(`Swap failed: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
 
+    // ... (keep the rest of your component code the same)
     return (
-        <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
-            <h2 style={{ textAlign: 'center' }}>SOL → $IE Swap</h2>
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
-                <WalletMultiButton />
-            </div>
+        <div className="swap-component">
+            <h2 className="swap-title">Swap SOL for $IE</h2>
+            <WalletMultiButton className="wallet-button" />
             
             <input
                 type="number"
+                placeholder="Amount in SOL"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="Amount in SOL"
-                style={{
-                    width: '100%',
-                    padding: '10px',
-                    margin: '10px 0',
-                    borderRadius: '5px',
-                    border: '1px solid #ccc'
-                }}
-                min="0.01"
+                className="swap-input"
+                min="0"
                 step="0.01"
             />
             
-            {estimatedIE && (
-                <div style={{ margin: '10px 0', textAlign: 'center' }}>
-                    ≈ <strong>{estimatedIE}</strong> $IE (estimated)
-                </div>
+            {estimatedIE !== null && (
+                <p className="swap-estimate">
+                    Estimated $IE: {estimatedIE.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                </p>
             )}
             
-            <button
-                onClick={handleSwap}
-                disabled={!publicKey || !amount || loading}
-                style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: loading ? '#aaa' : '#3a86ff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    fontSize: '16px'
-                }}
+            <button 
+                onClick={handleSwap} 
+                className="swap-button"
+                disabled={loading || !publicKey || !amount || parseFloat(amount) <= 0}
             >
                 {loading ? 'Swapping...' : 'Swap'}
             </button>
-            
-            <div style={{ marginTop: '15px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
-                Using Jupiter v1 API (free tier)
-            </div>
         </div>
     );
 };
