@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PublicKey, Connection } from '@solana/web3.js';
@@ -6,12 +6,36 @@ import { PublicKey, Connection } from '@solana/web3.js';
 const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [amount, setAmount] = useState('');
+    const [estimatedIE, setEstimatedIE] = useState(null);
     
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
 
     // ✅ $IE Token Address
     const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
+
+    useEffect(() => {
+        const fetchQuote = async () => {
+            if (!amount || parseFloat(amount) <= 0) {
+                setEstimatedIE(null);
+                return;
+            }
+            try {
+                const response = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${ieTokenAddress}&amount=${parseFloat(amount) * 1e9}&slippageBps=50`);
+                const quote = await response.json();
+                if (quote && quote.outAmount) {
+                    setEstimatedIE(quote.outAmount / 1e9); // Convert to token decimals
+                } else {
+                    setEstimatedIE(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch quote", error);
+                setEstimatedIE(null);
+            }
+        };
+        
+        fetchQuote();
+    }, [amount]);
 
     const handleSwap = async () => {
         if (!publicKey) {
@@ -30,7 +54,7 @@ const SwapComponent = () => {
             const response = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${ieTokenAddress}&amount=${solAmount * 1e9}&slippageBps=50`);
             const quote = await response.json();
 
-            if (!quote) {
+            if (!quote.routes || quote.routes.length === 0) {
                 alert("No swap route found!");
                 return;
             }
@@ -70,6 +94,9 @@ const SwapComponent = () => {
                 onChange={(e) => setAmount(e.target.value)}
                 className="swap-input"
             />
+            {estimatedIE !== null && (
+                <p className="swap-estimate">Estimated $IE: {estimatedIE.toFixed(4)}</p>
+            )}
             <button onClick={handleSwap} className="swap-button">
                 Swap
             </button>
