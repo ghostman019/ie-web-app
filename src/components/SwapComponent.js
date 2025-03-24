@@ -7,46 +7,44 @@ const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
-    const [loadingQuote, setLoadingQuote] = useState(false);
     
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
 
-    // ✅ $IE Token Address
-    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'; 
+    // ✅ $IE Token Address (Ensure it's a string)
+    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA';
+    const solTokenAddress = 'So11111111111111111111111111111111111111112'; // SOL
 
-    // Function to fetch estimated $IE amount
-    const fetchQuote = async (solAmount) => {
-        if (!solAmount || solAmount <= 0) {
-            setEstimatedIE(null);
-            return;
-        }
+    useEffect(() => {
+        const fetchQuote = async () => {
+            if (!amount || parseFloat(amount) <= 0) {
+                setEstimatedIE(null);
+                return;
+            }
+            try {
+                const amountInLamports = Math.floor(parseFloat(amount) * 1e9); // Convert SOL to lamports
 
-        try {
-            setLoadingQuote(true);
-            const response = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${ieTokenAddress}&amount=${solAmount * 1e9}&slippageBps=50`);
-            const quote = await response.json();
-            
-            if (quote?.outAmount) {
-                setEstimatedIE((quote.outAmount / 1e9).toFixed(2)); // Convert lamports to token amount
-            } else {
+                const response = await fetch(
+                    `https://quote-api.jup.ag/v6/quote?inputMint=${solTokenAddress}&outputMint=${ieTokenAddress}&amount=${amountInLamports}&slippageBps=50`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`Jupiter API error: ${response.status}`);
+                }
+
+                const quote = await response.json();
+                if (quote.outAmount) {
+                    setEstimatedIE(quote.outAmount / 1e9); // Convert from lamports
+                } else {
+                    setEstimatedIE(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch quote", error);
                 setEstimatedIE(null);
             }
-        } catch (error) {
-            console.error("Error fetching quote:", error);
-            setEstimatedIE(null);
-        } finally {
-            setLoadingQuote(false);
-        }
-    };
+        };
 
-    // Update quote when amount changes
-    useEffect(() => {
-        if (amount) {
-            fetchQuote(parseFloat(amount));
-        } else {
-            setEstimatedIE(null);
-        }
+        fetchQuote();
     }, [amount]);
 
     const handleSwap = async () => {
@@ -62,8 +60,17 @@ const SwapComponent = () => {
                 return;
             }
 
+            const amountInLamports = Math.floor(solAmount * 1e9); // Convert SOL to lamports
+
             // ✅ Fetch Best Swap Route from Jupiter
-            const response = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=${ieTokenAddress}&amount=${solAmount * 1e9}&slippageBps=50`);
+            const response = await fetch(
+                `https://quote-api.jup.ag/v6/quote?inputMint=${solTokenAddress}&outputMint=${ieTokenAddress}&amount=${amountInLamports}&slippageBps=50`
+            );
+
+            if (!response.ok) {
+                throw new Error(`Jupiter API error: ${response.status}`);
+            }
+
             const quote = await response.json();
 
             if (!quote.routes || quote.routes.length === 0) {
@@ -81,7 +88,15 @@ const SwapComponent = () => {
                 }),
             });
 
+            if (!swapResponse.ok) {
+                throw new Error(`Swap API error: ${swapResponse.status}`);
+            }
+
             const { swapTransaction } = await swapResponse.json();
+            if (!swapTransaction) {
+                throw new Error("Swap transaction missing from response.");
+            }
+
             const transaction = Buffer.from(swapTransaction, "base64");
 
             // ✅ Send Transaction
@@ -91,7 +106,7 @@ const SwapComponent = () => {
             alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
         } catch (error) {
             console.error('Swap failed', error);
-            alert('Swap failed! Check console for details.');
+            alert(`Swap failed! Error: ${error.message}`);
         }
     };
 
@@ -106,9 +121,9 @@ const SwapComponent = () => {
                 onChange={(e) => setAmount(e.target.value)}
                 className="swap-input"
             />
-            <p className="estimated-output">
-                {loadingQuote ? "Fetching estimate..." : estimatedIE ? `Estimated $IE: ${estimatedIE}` : "Enter SOL amount"}
-            </p>
+            {estimatedIE !== null && (
+                <p className="swap-estimate">Estimated $IE: {estimatedIE.toFixed(4)}</p>
+            )}
             <button onClick={handleSwap} className="swap-button">
                 Swap
             </button>
