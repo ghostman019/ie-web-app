@@ -1,116 +1,170 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 
 const SwapComponent = () => {
-    const { publicKey, sendTransaction } = useWallet();
-    const [amount, setAmount] = useState('');
-    const [estimatedIE, setEstimatedIE] = useState(null);
-    const [loading, setLoading] = useState(false);
-    
-    const RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
-    const connection = new Connection(RPC_URL, "confirmed");
+  const { publicKey, sendTransaction } = useWallet();
+  const [amount, setAmount] = useState('');
+  const [estimatedIE, setEstimatedIE] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [tokenVerified, setTokenVerified] = useState(false);
+  
+  const RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
+  const connection = new Connection(RPC_URL, "confirmed");
 
-    // Token Addresses
-    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'; // $IE
-    const solTokenAddress = 'So11111111111111111111111111111111111111112'; // SOL
+  // Token addresses
+  const SOL_TOKEN = 'So11111111111111111111111111111111111111112';
+  const IE_TOKEN = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'; // Double-check this!
 
-    // Fixed version of handleSwap
-    const handleSwap = async () => {
-        if (!publicKey) {
-            alert('Please connect your wallet!');
-            return;
-        }
+  // Jupiter v3 API
+  const JUPITER_QUOTE_URL = 'https://quote-api.jup.ag/v3/quote';
+  const JUPITER_SWAP_URL = 'https://quote-api.jup.ag/v3/swap';
 
-        if (!amount || parseFloat(amount) <= 0) {
-            alert("Enter a valid SOL amount!");
-            return;
-        }
-
-        setLoading(true);
-        
-        try {
-            // 1. Get Quote
-            const quoteResponse = await fetch(
-                `https://quote-api.jup.ag/v6/quote?` +
-                `inputMint=${solTokenAddress}&` +
-                `outputMint=${ieTokenAddress}&` +
-                `amount=${parseFloat(amount) * 1e9}&` +
-                `slippageBps=50` // 0.5% slippage
-            );
-            const quote = await quoteResponse.json();
-
-            // 2. Get Swap Transaction
-            const swapResponse = await fetch('https://api.jup.ag/v6/swap', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    quoteResponse: quote,
-                    userPublicKey: publicKey.toString(),
-                    wrapAndUnwrapSol: true,
-                }),
-            });
-            const swapResult = await swapResponse.json();
-
-            // 3. Properly decode and send transaction
-            if (!swapResult.swapTransaction) {
-                throw new Error("No transaction returned from Jupiter API");
-            }
-
-            // Convert the swap transaction to Uint8Array
-            const swapTransactionBuf = Buffer.from(swapResult.swapTransaction, 'base64');
-            const transaction = Uint8Array.from(swapTransactionBuf);
-            
-            // 4. Send and confirm transaction
-            const signature = await sendTransaction(transaction, connection);
-            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-            
-            if (confirmation.value.err) {
-                throw new Error("Transaction failed");
-            }
-
-            alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
-            
-        } catch (error) {
-            console.error('Swap failed:', error);
-            alert(`Swap failed: ${error.message}`);
-        } finally {
-            setLoading(false);
-        }
+  // Verify token exists
+  useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        const accountInfo = await connection.getAccountInfo(
+          new PublicKey(IE_TOKEN)
+        );
+        setTokenVerified(accountInfo !== null);
+      } catch (error) {
+        console.error("Token verification failed:", error);
+        setTokenVerified(false);
+      }
     };
+    verifyToken();
+  }, []);
 
-    // ... (keep the rest of your component code the same)
-    return (
-        <div className="swap-component">
-            <h2 className="swap-title">Swap SOL for $IE</h2>
-            <WalletMultiButton className="wallet-button" />
-            
-            <input
-                type="number"
-                placeholder="Amount in SOL"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="swap-input"
-                min="0"
-                step="0.01"
-            />
-            
-            {estimatedIE !== null && (
-                <p className="swap-estimate">
-                    Estimated $IE: {estimatedIE.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                </p>
-            )}
-            
-            <button 
-                onClick={handleSwap} 
-                className="swap-button"
-                disabled={loading || !publicKey || !amount || parseFloat(amount) <= 0}
-            >
-                {loading ? 'Swapping...' : 'Swap'}
-            </button>
+  const fetchQuote = async () => {
+    if (!tokenVerified || !amount || parseFloat(amount) <= 0) {
+      setEstimatedIE(null);
+      return;
+    }
+    
+    try {
+      const params = new URLSearchParams({
+        inputMint: SOL_TOKEN,
+        outputMint: IE_TOKEN,
+        amount: Math.floor(parseFloat(amount) * 1e9).toString(),
+        slippageBps: '50'
+      });
+
+      const response = await fetch(`${JUPITER_QUOTE_URL}?${params}`);
+      if (!response.ok) throw new Error(await response.text());
+      
+      const { outAmount } = await response.json();
+      setEstimatedIE((outAmount / 1e6).toFixed(4)); // Adjust decimals if needed
+    } catch (error) {
+      console.error("Quote error:", error);
+      setEstimatedIE(null);
+    }
+  };
+
+  const handleSwap = async () => {
+    if (!publicKey || !tokenVerified) {
+      return alert('Please connect wallet and verify token');
+    }
+
+    setLoading(true);
+    try {
+      // Get quote
+      const quoteParams = new URLSearchParams({
+        inputMint: SOL_TOKEN,
+        outputMint: IE_TOKEN,
+        amount: Math.floor(parseFloat(amount) * 1e9).toString(),
+        slippageBps: '50'
+      });
+
+      const quoteResponse = await fetch(`${JUPITER_QUOTE_URL}?${quoteParams}`);
+      if (!quoteResponse.ok) throw new Error(await quoteResponse.text());
+      const quote = await quoteResponse.json();
+
+      // Prepare swap
+      const swapResponse = await fetch(JUPITER_SWAP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteResponse: quote,
+          userPublicKey: publicKey.toString(),
+        }),
+      });
+
+      if (!swapResponse.ok) throw new Error(await swapResponse.text());
+      const { swapTransaction } = await swapResponse.json();
+
+      // Execute swap
+      const rawTx = Buffer.from(swapTransaction, 'base64');
+      const txid = await sendTransaction(
+        new Uint8Array(rawTx),
+        connection,
+        { skipPreflight: false }
+      );
+
+      alert(`Swap submitted! TX: ${txid}`);
+    } catch (error) {
+      console.error('Swap failed:', error);
+      alert(`Error: ${error.message.split('\n')[0]}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      maxWidth: '400px',
+      margin: '0 auto',
+      padding: '20px',
+      background: 'black',
+      color: 'cyan',
+      fontFamily: 'BM VHS, sans-serif',
+      textAlign: 'center',
+      borderRadius: '15px',
+      boxShadow: '0px 0px 10px cyan'
+    }}>
+      <h2 style={{ textShadow: '0px 0px 10px cyan' }}>SOL → $IE Swap</h2>
+      <WalletMultiButton style={{ margin: '10px 0', background: 'purple', color: 'white', padding: '10px', borderRadius: '10px', border: 'none' }} />
+      
+      {!tokenVerified && (
+        <div style={{ color: 'red', margin: '10px 0' }}>
+          Warning: $IE token not verified
         </div>
-    );
+      )}
+
+      <input
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        placeholder="SOL amount"
+        min="0.01"
+        step="0.01"
+        style={{ width: '100%', padding: '10px', margin: '10px 0', background: 'black', color: 'cyan', border: '1px solid cyan', borderRadius: '5px' }}
+      />
+
+      {estimatedIE && (
+        <div style={{ textShadow: '0px 0px 5px cyan' }}>Estimated: {estimatedIE} $IE</div>
+      )}
+
+      <button
+        onClick={handleSwap}
+        disabled={!publicKey || !amount || loading || !tokenVerified}
+        style={{
+          width: '100%',
+          padding: '12px',
+          marginTop: '10px',
+          background: 'purple',
+          color: 'white',
+          border: 'none',
+          borderRadius: '10px',
+          boxShadow: '0px 0px 10px purple',
+          cursor: 'pointer'
+        }}
+      >
+        {loading ? 'Processing...' : 'Swap'}
+      </button>
+    </div>
+  );
 };
 
 export default SwapComponent;
