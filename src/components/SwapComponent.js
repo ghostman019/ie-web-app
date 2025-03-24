@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { PublicKey, Connection } from '@solana/web3.js';
+import { Connection, Transaction } from '@solana/web3.js';
 
 const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
+    const [loading, setLoading] = useState(false);
     
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
 
-    // ✅ $IE Token Address
-    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA';
-    const solTokenAddress = 'So11111111111111111111111111111111111111112';
+    // Token Addresses
+    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'; // $IE
+    const solTokenAddress = 'So11111111111111111111111111111111111111112'; // SOL
 
     useEffect(() => {
         const fetchQuote = async () => {
@@ -21,10 +22,18 @@ const SwapComponent = () => {
                 setEstimatedIE(null);
                 return;
             }
+            
             try {
-                const response = await fetch(`https://api.raydium.io/v2/quote?inputMint=${solTokenAddress}&outputMint=${ieTokenAddress}&amount=${parseFloat(amount) * 1e9}&slippage=0.5`);
+                const response = await fetch(
+                    `https://quote-api.jup.ag/v6/quote?` +
+                    `inputMint=${solTokenAddress}&` +
+                    `outputMint=${ieTokenAddress}&` +
+                    `amount=${parseFloat(amount) * 1e9}&` + // Convert SOL to lamports
+                    `slippageBps=50` // 0.5% slippage (50 bps)
+                );
+                
                 const quote = await response.json();
-                if (quote && quote.outAmount) {
+                if (quote?.outAmount) {
                     setEstimatedIE(quote.outAmount / 1e9); // Convert to token decimals
                 } else {
                     setEstimatedIE(null);
@@ -35,7 +44,8 @@ const SwapComponent = () => {
             }
         };
         
-        fetchQuote();
+        const debounceTimer = setTimeout(fetchQuote, 500);
+        return () => clearTimeout(debounceTimer);
     }, [amount]);
 
     const handleSwap = async () => {
@@ -44,39 +54,50 @@ const SwapComponent = () => {
             return;
         }
 
-        try {
-            const solAmount = parseFloat(amount);
-            if (solAmount <= 0) {
-                alert("Enter a valid amount!");
-                return;
-            }
+        if (!amount || parseFloat(amount) <= 0) {
+            alert("Enter a valid SOL amount!");
+            return;
+        }
 
-            // ✅ Fetch Best Swap Route from Raydium
-            const response = await fetch("https://api.raydium.io/v2/swap", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+        setLoading(true);
+        
+        try {
+            // 1. Get Quote
+            const quoteResponse = await fetch(
+                `https://quote-api.jup.ag/v6/quote?` +
+                `inputMint=${solTokenAddress}&` +
+                `outputMint=${ieTokenAddress}&` +
+                `amount=${parseFloat(amount) * 1e9}&` +
+                `slippageBps=50`
+            );
+            const quote = await quoteResponse.json();
+
+            // 2. Get Swap Transaction
+            const swapResponse = await fetch('https://api.jup.ag/v6/swap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    inToken: solTokenAddress,
-                    outToken: ieTokenAddress,
-                    amountIn: solAmount * 1e9,
-                    userPublicKey: publicKey.toBase58(),
-                    slippage: 0.5,
+                    quoteResponse: quote,
+                    userPublicKey: publicKey.toString(),
+                    wrapAndUnwrapSol: true, // Handles SOL wrapping automatically
                 }),
             });
-            const swapData = await response.json();
-            if (!swapData || !swapData.tx) {
-                alert("Swap failed: No transaction data received!");
-                return;
-            }
+            const swapResult = await swapResponse.json();
 
-            const transaction = Buffer.from(swapData.tx, "base64");
+            // 3. Send Transaction
+            const swapTransactionBuf = Buffer.from(swapResult.swapTransaction, 'base64');
+            const transaction = Transaction.from(swapTransactionBuf);
             const signature = await sendTransaction(transaction, connection);
-            await connection.confirmTransaction(signature, 'processed');
-
+            
+            // 4. Confirm Transaction
+            await connection.confirmTransaction(signature, 'confirmed');
             alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
+            
         } catch (error) {
-            console.error('Swap failed', error);
-            alert('Swap failed! Check console for details.');
+            console.error('Swap failed:', error);
+            alert(`Swap failed: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -84,18 +105,29 @@ const SwapComponent = () => {
         <div className="swap-component">
             <h2 className="swap-title">Swap SOL for $IE</h2>
             <WalletMultiButton className="wallet-button" />
+            
             <input
                 type="number"
                 placeholder="Amount in SOL"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="swap-input"
+                min="0"
+                step="0.01"
             />
+            
             {estimatedIE !== null && (
-                <p className="swap-estimate">Estimated $IE: {estimatedIE.toFixed(4)}</p>
+                <p className="swap-estimate">
+                    Estimated $IE: {estimatedIE.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                </p>
             )}
-            <button onClick={handleSwap} className="swap-button">
-                Swap
+            
+            <button 
+                onClick={handleSwap} 
+                className="swap-button"
+                disabled={loading || !publicKey || !amount || parseFloat(amount) <= 0}
+            >
+                {loading ? 'Swapping...' : 'Swap'}
             </button>
         </div>
     );
