@@ -284,7 +284,11 @@ const SwapComponentWithProviders = () => (
     <WalletProvider
         wallets={useMemo(() => [
             new PhantomWalletAdapter(),
-            new SolflareWalletAdapter({ network: WalletAdapterNetwork.Mainnet }),
+            new SolflareWalletAdapter({ network: WalletAdapterNetwork.Mainnet,
+                
+                endpoint: ALCHEMY_RPC_URL
+
+             }),
         ], [])}
         autoConnect={true}
         onError={(error) => {
