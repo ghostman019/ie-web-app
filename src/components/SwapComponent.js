@@ -5,12 +5,12 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PublicKey, Connection, VersionedTransaction } from '@solana/web3.js';
+import { Buffer } from 'buffer';
 import fetch from 'cross-fetch';
 import './SwapComponent.css';
 
-// Main component remains exactly the same
 const SwapComponent = () => {
-    const { publicKey, sendTransaction, connected } = useWallet();
+    const { publicKey, sendTransaction, connected, connect } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [quoteResponse, setQuoteResponse] = useState(null);
@@ -18,11 +18,38 @@ const SwapComponent = () => {
     const [error, setError] = useState(null);
     const [txSuccess, setTxSuccess] = useState(null);
     const [solBalance, setSolBalance] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
 
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
     const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
     const outputMint = ieTokenAddress.toBase58();
+
+    useEffect(() => {
+        // Check if user is on mobile
+        setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+        
+        // Handle Phantom deeplink callback
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('publicKey')) {
+            const publicKey = new PublicKey(params.get('publicKey'));
+            console.log('Connected via deeplink:', publicKey.toString());
+            // Here you would typically set the connected wallet state
+        }
+    }, []);
+
+    const handleMobileConnect = () => {
+        if (!isMobile) return;
+        
+        const params = new URLSearchParams({
+            app_url: window.location.origin,
+            redirect_link: `${window.location.origin}?deeplink=phantom`,
+            cluster: 'mainnet'
+        });
+
+        // Open Phantom app via deeplink
+        window.location.href = `https://phantom.app/ul/v1/connect?${params.toString()}`;
+    };
 
     const fetchBalance = useCallback(async () => {
         if (!publicKey) return;
@@ -115,7 +142,9 @@ const SwapComponent = () => {
     return (
         <div className="swap-component">
             <h2>Swap SOL for $IE</h2>
-            <WalletMultiButton />
+            <WalletMultiButton 
+                onClick={isMobile ? handleMobileConnect : undefined} 
+            />
             <p>Your Balance: {solBalance.toFixed(4)} SOL</p>
             <div className="input-container">
                 <div className="input-header">
@@ -151,7 +180,6 @@ const SwapComponent = () => {
     );
 };
 
-// Enhanced wallet provider wrapper for mobile
 const SwapComponentWithProviders = () => (
     <WalletProvider
         wallets={[
