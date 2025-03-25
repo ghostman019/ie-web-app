@@ -1,86 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
-import { NATIVE_MINT } from '@solana/spl-token';
+import { Connection } from '@solana/web3.js';
 
 const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [priorityFee, setPriorityFee] = useState<string>('0');
     
     const RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(RPC_URL, "confirmed");
 
     // Token Addresses
-    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA';
-    const solTokenAddress = NATIVE_MINT.toBase58();
+    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'; // $IE
+    const solTokenAddress = 'So11111111111111111111111111111111111111112'; // SOL
 
-    // API Endpoints
-    const API_URLS = {
-        SWAP_HOST: 'https://transaction-v1.raydium.io',
-        BASE_HOST: 'https://api.raydium.io',
-        PRIORITY_FEE: '/v2/priority-fee'
-    };
-
-    useEffect(() => {
-        const fetchPriorityFee = async () => {
-            try {
-                const response = await fetch(`${API_URLS.BASE_HOST}${API_URLS.PRIORITY_FEE}`);
-                const data = await response.json();
-                if (data?.data?.default?.h) {
-                    setPriorityFee(String(data.data.default.h));
-                }
-            } catch (error) {
-                console.error("Failed to fetch priority fee", error);
-            }
-        };
-        
-        fetchPriorityFee();
-    }, []);
-
-    useEffect(() => {
-        const fetchQuote = async () => {
-            if (!amount || parseFloat(amount) <= 0) {
-                setEstimatedIE(null);
-                return;
-            }
-            
-            try {
-                const response = await fetch(
-                    `${API_URLS.SWAP_HOST}/compute/swap-base-in?` +
-                    `inputMint=${solTokenAddress}&` +
-                    `outputMint=${ieTokenAddress}&` +
-                    `amount=${parseFloat(amount) * 1e9}&` +
-                    `slippageBps=50&` + // 0.5% slippage
-                    `txVersion=V0`
-                );
-                
-                if (!response.ok) throw new Error(`Failed to fetch quote: ${response.status}`);
-                
-                const quote = await response.json();
-                setEstimatedIE(quote?.outAmount ? (quote.outAmount / 1e9).toFixed(4) : null);
-            } catch (error) {
-                console.error("Quote error:", error);
-                setEstimatedIE(null);
-            }
-        };
-        
-        const debounceTimer = setTimeout(fetchQuote, 500);
-        return () => clearTimeout(debounceTimer);
-    }, [amount]);
-
+    // Fixed version of handleSwap
     const handleSwap = async () => {
         if (!publicKey) {
             alert('Please connect your wallet!');
             return;
         }
 
-        const solAmount = parseFloat(amount);
-        if (solAmount <= 0) {
-            alert("Enter a valid amount!");
+        if (!amount || parseFloat(amount) <= 0) {
+            alert("Enter a valid SOL amount!");
             return;
         }
 
@@ -89,48 +33,42 @@ const SwapComponent = () => {
         try {
             // 1. Get Quote
             const quoteResponse = await fetch(
-                `${API_URLS.SWAP_HOST}/compute/swap-base-in?` +
+                `https://quote-api.jup.ag/v6/quote?` +
                 `inputMint=${solTokenAddress}&` +
                 `outputMint=${ieTokenAddress}&` +
-                `amount=${solAmount * 1e9}&` +
-                `slippageBps=50&` +
-                `txVersion=V0`
+                `amount=${parseFloat(amount) * 1e9}&` +
+                `slippageBps=50` // 0.5% slippage
             );
-            
-            if (!quoteResponse.ok) throw new Error(await quoteResponse.text());
             const quote = await quoteResponse.json();
 
-            // 2. Build Swap Transaction
-            const swapResponse = await fetch(`${API_URLS.SWAP_HOST}/transaction/swap-base-in`, {
+            // 2. Get Swap Transaction
+            const swapResponse = await fetch('https://api.jup.ag/v6/swap', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    computeUnitPriceMicroLamports: priorityFee,
-                    swapResponse: quote,
-                    txVersion: 'V0',
-                    wallet: publicKey.toBase58(),
-                    wrapSol: true,
-                    unwrapSol: false,
-                    inputAccount: undefined, // Using SOL as input
-                    outputAccount: undefined // Default to ATA
+                    quoteResponse: quote,
+                    userPublicKey: publicKey.toString(),
+                    wrapAndUnwrapSol: true,
                 }),
             });
-            
-            if (!swapResponse.ok) throw new Error(await swapResponse.text());
             const swapResult = await swapResponse.json();
 
-            // 3. Send Transaction
-            const txBuf = Buffer.from(swapResult.data[0].transaction, 'base64');
-            const transaction = VersionedTransaction.deserialize(txBuf);
+            // 3. Properly decode and send transaction
+            if (!swapResult.swapTransaction) {
+                throw new Error("No transaction returned from Jupiter API");
+            }
+
+            // Convert the swap transaction to Uint8Array
+            const swapTransactionBuf = Buffer.from(swapResult.swapTransaction, 'base64');
+            const transaction = Uint8Array.from(swapTransactionBuf);
             
+            // 4. Send and confirm transaction
             const signature = await sendTransaction(transaction, connection);
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
             
-            await connection.confirmTransaction({
-                blockhash,
-                lastValidBlockHeight,
-                signature
-            }, 'confirmed');
+            if (confirmation.value.err) {
+                throw new Error("Transaction failed");
+            }
 
             alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
             
@@ -142,6 +80,7 @@ const SwapComponent = () => {
         }
     };
 
+    // ... (keep the rest of your component code the same)
     return (
         <div className="swap-component">
             <h2 className="swap-title">Swap SOL for $IE</h2>
@@ -153,19 +92,20 @@ const SwapComponent = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="swap-input"
-                min="0.01"
+                min="0"
                 step="0.01"
-                disabled={loading}
             />
             
             {estimatedIE !== null && (
-                <p className="swap-estimate">Estimated $IE: {estimatedIE}</p>
+                <p className="swap-estimate">
+                    Estimated $IE: {estimatedIE.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                </p>
             )}
             
             <button 
                 onClick={handleSwap} 
                 className="swap-button"
-                disabled={!publicKey || !amount || loading}
+                disabled={loading || !publicKey || !amount || parseFloat(amount) <= 0}
             >
                 {loading ? 'Swapping...' : 'Swap'}
             </button>
