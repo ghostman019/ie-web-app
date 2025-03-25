@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useWallet, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PublicKey, Connection, VersionedTransaction } from '@solana/web3.js';
 import fetch from 'cross-fetch';
 import './SwapComponent.css';
 
+// Main component remains exactly the same
 const SwapComponent = () => {
     const { publicKey, sendTransaction, connected } = useWallet();
     const [amount, setAmount] = useState('');
@@ -147,4 +151,22 @@ const SwapComponent = () => {
     );
 };
 
-export default SwapComponent;
+// Enhanced wallet provider wrapper for mobile
+const SwapComponentWithProviders = () => (
+    <WalletProvider
+        wallets={[
+            new PhantomWalletAdapter(),
+            new SolflareWalletAdapter({ network: WalletAdapterNetwork.Mainnet }),
+        ]}
+        autoConnect={true}
+        onError={(error) => {
+            console.error('Wallet error:', error);
+        }}
+    >
+        <WalletModalProvider>
+            <SwapComponent />
+        </WalletModalProvider>
+    </WalletProvider>
+);
+
+export default SwapComponentWithProviders;
