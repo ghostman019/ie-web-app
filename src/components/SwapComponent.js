@@ -16,15 +16,21 @@ const SwapComponent = () => {
     const [solBalance, setSolBalance] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
 
-    // Detect mobile browser
-    useEffect(() => {
-        setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    }, []);
-
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
     const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
     const outputMint = ieTokenAddress.toBase58();
+
+    // Check for mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const fetchBalance = useCallback(async () => {
         if (!publicKey) return;
@@ -88,15 +94,7 @@ const SwapComponent = () => {
             setError(null);
             setTxSuccess(null);
 
-            // Mobile-specific handling
-            if (isMobile && wallet?.adapter) {
-                try {
-                    await wallet.adapter.connect();
-                } catch (e) {
-                    console.log("Mobile wallet connection attempt");
-                }
-            }
-
+            // Enhanced mobile wallet compatibility
             const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -106,36 +104,47 @@ const SwapComponent = () => {
                     wrapAndUnwrapSol: true,
                 })
             });
-            
-            if (!swapResponse.ok) {
-                const errorData = await swapResponse.json();
-                throw new Error(errorData.message || `Swap request failed: ${swapResponse.statusText}`);
-            }
+            if (!swapResponse.ok) throw new Error(`Swap request failed: ${swapResponse.statusText}`);
             
             const { swapTransaction } = await swapResponse.json();
             const transaction = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
             
-            // Mobile wallet handling
-            if (isMobile && wallet?.adapter?.sendTransaction) {
+            // Mobile-specific wallet connection handling
+            if (isMobile && wallet?.adapter) {
                 try {
-                    const txid = await wallet.adapter.sendTransaction(transaction, connection);
-                    await connection.confirmTransaction(txid);
-                    setTxSuccess(txid);
+                    // Attempt to connect wallet if not already connected
+                    if (!wallet.adapter.connected) {
+                        await wallet.adapter.connect();
+                    }
+                } catch (connectError) {
+                    console.error("Wallet connection error:", connectError);
+                    setError("Failed to connect wallet. Please try again.");
+                    setLoading(false);
                     return;
-                } catch (e) {
-                    console.log("Falling back to standard sendTransaction");
                 }
             }
+
+            const txid = await sendTransaction(transaction, connection, { 
+                skipPreflight: isMobile, // Skip preflight on mobile to reduce connection issues
+                maxRetries: 3 // Add retry mechanism
+            });
             
-            // Standard transaction sending
-            const txid = await sendTransaction(transaction, connection);
-            await connection.confirmTransaction(txid);
+            // Add a slight delay for mobile to ensure transaction confirmation
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const confirmation = await connection.confirmTransaction(txid, {
+                commitment: 'confirmed',
+                timeout: 30000 // Longer timeout for mobile networks
+            });
+
+            if (confirmation.value.err) {
+                throw new Error("Transaction failed");
+            }
+
             setTxSuccess(txid);
         } catch (error) {
             console.error("Swap error:", error);
-            setError(error.message.includes('User rejected') 
-                ? "Transaction was cancelled" 
-                : error.message);
+            setError(error.message || "Transaction failed. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -147,7 +156,7 @@ const SwapComponent = () => {
         <div className="swap-component">
             <h2>Swap SOL for $IE</h2>
             <WalletMultiButton />
-            {connected && <p>Your Balance: {solBalance.toFixed(4)} SOL</p>}
+            <p>Your Balance: {solBalance.toFixed(4)} SOL</p>
             <div className="input-container">
                 <div className="input-header">
                     <span>Amount (SOL)</span>
@@ -155,9 +164,15 @@ const SwapComponent = () => {
                 </div>
                 <input
                     type="number"
+                    inputMode="decimal" // Improved mobile keyboard
+                    pattern="[0-9]*[.]?[0-9]*"
                     placeholder="0.0"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => {
+                        // Prevent non-numeric input
+                        const value = e.target.value.replace(/[^0-9.]/g, '');
+                        setAmount(value);
+                    }}
                     className="swap-input"
                     disabled={!connected || loading}
                 />
