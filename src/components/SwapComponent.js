@@ -16,6 +16,7 @@ const JUPITER_SWAP_API = 'https://quote-api.jup.ag/v6/swap';
 const SOL_DECIMALS = 9;
 const IE_DECIMALS = 9;
 const SLIPPAGE_BPS = 50; // 0.5%
+const MAX_RETRIES = 3;
 
 const SwapComponent = () => {
     const { publicKey, sendTransaction, connected } = useWallet();
@@ -27,17 +28,15 @@ const SwapComponent = () => {
     const [txSuccess, setTxSuccess] = useState(null);
     const [solBalance, setSolBalance] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
 
-    // Memoize connection and token address to prevent unnecessary recreations
     const connection = useMemo(() => new Connection(ALCHEMY_RPC_URL, "confirmed"), []);
     const outputMint = useMemo(() => new PublicKey(IE_TOKEN_ADDRESS).toBase58(), []);
 
     useEffect(() => {
-        // Check if user is on mobile
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         setIsMobile(/iPhone|iPad|iPod|Android/i.test(userAgent));
         
-        // Cleanup URL params after deep link connection
         const params = new URLSearchParams(window.location.search);
         if (params.has('publicKey') || params.has('deeplink')) {
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -46,20 +45,30 @@ const SwapComponent = () => {
 
     const fetchBalance = useCallback(async () => {
         if (!publicKey) return;
+        
         try {
             const balance = await connection.getBalance(publicKey);
             setSolBalance(balance / Math.pow(10, SOL_DECIMALS));
         } catch (err) {
             console.error("Error fetching balance:", err);
             setError("Failed to fetch balance. Please try again.");
+            
+            // Retry logic
+            if (retryCount < MAX_RETRIES) {
+                setTimeout(() => {
+                    setRetryCount(retryCount + 1);
+                    fetchBalance();
+                }, 2000);
+            }
         }
-    }, [publicKey, connection]);
+    }, [publicKey, connection, retryCount]);
 
     useEffect(() => {
         if (connected) {
             fetchBalance();
         } else {
             setSolBalance(0);
+            setRetryCount(0);
         }
     }, [connected, fetchBalance]);
 
@@ -102,7 +111,6 @@ const SwapComponent = () => {
         }
     }, [amount, outputMint]);
 
-    // Debounce quote fetching
     useEffect(() => {
         const debounceTimer = setTimeout(fetchQuote, 500);
         return () => clearTimeout(debounceTimer);
@@ -113,6 +121,7 @@ const SwapComponent = () => {
             setError('Please connect your wallet first');
             return;
         }
+        
         if (!quoteResponse) {
             setError("Please wait for the quote to load");
             return;
@@ -155,14 +164,15 @@ const SwapComponent = () => {
             const transaction = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
             const txid = await sendTransaction(transaction, connection);
             
-            // Poll for confirmation with timeout
-            const confirmation = await connection.confirmTransaction(txid, 'confirmed');
-            if (confirmation.value.err) {
-                throw new Error("Transaction failed");
-            }
-            
+         // Wait for confirmation with timeout
+         await Promise.race([
+            connection.confirmTransaction(txid, 'confirmed'),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Transaction timeout')), 30000)
+            )
+        ]);
             setTxSuccess(txid);
-            fetchBalance(); // Refresh balance after successful swap
+            fetchBalance();
         } catch (error) {
             console.error("Swap error:", error);
             setError(error.message || "Swap failed. Please try again.");
@@ -173,13 +183,14 @@ const SwapComponent = () => {
 
     const handleMaxClick = () => {
         if (solBalance > 0) {
-            setAmount((solBalance * 0.99).toFixed(4)); // Leave some for gas
+            // Leave 0.01 SOL for transaction fees
+            const maxAmount = Math.max(0, solBalance - 0.01);
+            setAmount(maxAmount.toFixed(4));
         }
     };
 
     const handleAmountChange = (e) => {
         const value = e.target.value;
-        // Allow empty input or valid numbers
         if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
             setAmount(value);
         }
@@ -240,6 +251,7 @@ const SwapComponent = () => {
             {error && (
                 <div className="error-message">
                     <p>{error}</p>
+                    {retryCount > 0 && <p>Retrying... ({retryCount}/{MAX_RETRIES})</p>}
                 </div>
             )}
             
