@@ -6,7 +6,7 @@ import fetch from 'cross-fetch';
 import './SwapComponent.css';
 
 const SwapComponent = () => {
-    const { publicKey, sendTransaction, connected, wallet } = useWallet();
+    const { publicKey, sendTransaction, connected } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [quoteResponse, setQuoteResponse] = useState(null);
@@ -14,23 +14,11 @@ const SwapComponent = () => {
     const [error, setError] = useState(null);
     const [txSuccess, setTxSuccess] = useState(null);
     const [solBalance, setSolBalance] = useState(0);
-    const [isMobile, setIsMobile] = useState(false);
 
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
     const ieTokenAddress = new PublicKey('DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA');
     const outputMint = ieTokenAddress.toBase58();
-
-    // Check for mobile device
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-        };
-        
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     const fetchBalance = useCallback(async () => {
         if (!publicKey) return;
@@ -94,7 +82,6 @@ const SwapComponent = () => {
             setError(null);
             setTxSuccess(null);
 
-            // Enhanced mobile wallet compatibility
             const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -108,43 +95,12 @@ const SwapComponent = () => {
             
             const { swapTransaction } = await swapResponse.json();
             const transaction = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
-            
-            // Mobile-specific wallet connection handling
-            if (isMobile && wallet?.adapter) {
-                try {
-                    // Attempt to connect wallet if not already connected
-                    if (!wallet.adapter.connected) {
-                        await wallet.adapter.connect();
-                    }
-                } catch (connectError) {
-                    console.error("Wallet connection error:", connectError);
-                    setError("Failed to connect wallet. Please try again.");
-                    setLoading(false);
-                    return;
-                }
-            }
-
-            const txid = await sendTransaction(transaction, connection, { 
-                skipPreflight: isMobile, // Skip preflight on mobile to reduce connection issues
-                maxRetries: 3 // Add retry mechanism
-            });
-            
-            // Add a slight delay for mobile to ensure transaction confirmation
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            const confirmation = await connection.confirmTransaction(txid, {
-                commitment: 'confirmed',
-                timeout: 30000 // Longer timeout for mobile networks
-            });
-
-            if (confirmation.value.err) {
-                throw new Error("Transaction failed");
-            }
-
+            const txid = await sendTransaction(transaction, connection);
+            await connection.confirmTransaction(txid);
             setTxSuccess(txid);
         } catch (error) {
             console.error("Swap error:", error);
-            setError(error.message || "Transaction failed. Please try again.");
+            setError(error.message);
         } finally {
             setLoading(false);
         }
@@ -164,15 +120,9 @@ const SwapComponent = () => {
                 </div>
                 <input
                     type="number"
-                    inputMode="decimal" // Improved mobile keyboard
-                    pattern="[0-9]*[.]?[0-9]*"
                     placeholder="0.0"
                     value={amount}
-                    onChange={(e) => {
-                        // Prevent non-numeric input
-                        const value = e.target.value.replace(/[^0-9.]/g, '');
-                        setAmount(value);
-                    }}
+                    onChange={(e) => setAmount(e.target.value)}
                     className="swap-input"
                     disabled={!connected || loading}
                 />
@@ -190,11 +140,7 @@ const SwapComponent = () => {
                     Swap successful! <a href={`https://solscan.io/tx/${txSuccess}`} target="_blank" rel="noopener noreferrer">View transaction</a>
                 </div>
             )}
-            <button 
-                onClick={handleSwap} 
-                className="swap-button" 
-                disabled={!connected || !amount || loading || !quoteResponse}
-            >
+            <button onClick={handleSwap} className="swap-button" disabled={!connected || !amount || loading || !quoteResponse}>
                 {loading ? 'Processing...' : 'Swap'}
             </button>
         </div>
