@@ -6,6 +6,7 @@ import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PublicKey, Connection, VersionedTransaction } from '@solana/web3.js';
 import { Buffer } from 'buffer';
+import debounce from 'lodash.debounce';
 import './SwapComponent.css';
 
 // Constants
@@ -17,70 +18,85 @@ const SOL_DECIMALS = 9;
 const IE_DECIMALS = 9;
 const SLIPPAGE_BPS = 50; // 0.5%
 const MAX_RETRIES = 3;
-const WEBSITE_URL = 'https://internet-explorercto.de';
+const TX_TIMEOUT = 45000; // 45 seconds
+const MIN_SOL_RESERVE = 0.01; // Reserve 0.01 SOL for fees
+const PRICE_IMPACT_WARNING_THRESHOLD = 1; // 1%
 
 const SwapComponent = () => {
     const { publicKey, sendTransaction, connected, connect } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [quoteResponse, setQuoteResponse] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState({
+        quote: false,
+        swap: false,
+        balance: false
+    });
     const [error, setError] = useState(null);
     const [txSuccess, setTxSuccess] = useState(null);
     const [solBalance, setSolBalance] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
 
-    const connection = useMemo(() => new Connection(ALCHEMY_RPC_URL, "confirmed"), []);
+    const connection = useMemo(() => new Connection(ALCHEMY_RPC_URL, {
+        commitment: 'confirmed',
+        disableRetryOnRateLimit: false,
+        confirmTransactionInitialTimeout: TX_TIMEOUT
+    }), []);
+
     const outputMint = useMemo(() => new PublicKey(IE_TOKEN_ADDRESS).toBase58(), []);
 
+    // Detect mobile and handle deeplinks
     useEffect(() => {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         setIsMobile(/iPhone|iPad|iPod|Android/i.test(userAgent));
         
+        // Clean up URL params
         const params = new URLSearchParams(window.location.search);
         if (params.has('publicKey') || params.has('deeplink')) {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }, []);
 
-    const handleWalletSelect = (walletName) => {
+    // Handle wallet selection for mobile deeplinks
+    const handleWalletSelect = useCallback((walletName) => {
         if (!isMobile) return;
         
-        let deeplinkUrl;
-        switch(walletName) {
-            case 'Phantom':
-                deeplinkUrl = `https://phantom.app/ul/browse/${WEBSITE_URL}?ref=${encodeURIComponent(window.location.href)}`;
-                break;
-            case 'Solflare':
-                deeplinkUrl = `https://solflare.com/browse?url=${encodeURIComponent(WEBSITE_URL)}`;
-                break;
-            default:
-                return;
-        }
+        const deeplinks = {
+            'Phantom': `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`,
+            'Solflare': `https://solflare.com/browse?url=${encodeURIComponent(window.location.href)}`
+        };
         
-        window.location.href = deeplinkUrl;
-    };
+        if (deeplinks[walletName]) {
+            window.location.href = deeplinks[walletName];
+        }
+    }, [isMobile]);
 
+    // Fetch balance with retry logic
     const fetchBalance = useCallback(async () => {
         if (!publicKey) return;
         
         try {
+            setLoading(prev => ({ ...prev, balance: true }));
             const balance = await connection.getBalance(publicKey);
             setSolBalance(balance / Math.pow(10, SOL_DECIMALS));
+            setRetryCount(0);
         } catch (err) {
             console.error("Error fetching balance:", err);
             setError("Failed to fetch balance. Please try again.");
             
             if (retryCount < MAX_RETRIES) {
                 setTimeout(() => {
-                    setRetryCount(retryCount + 1);
+                    setRetryCount(prev => prev + 1);
                     fetchBalance();
-                }, 2000);
+                }, 2000 * (retryCount + 1)); // Exponential backoff
             }
+        } finally {
+            setLoading(prev => ({ ...prev, balance: false }));
         }
     }, [publicKey, connection, retryCount]);
 
+    // Auto-fetch balance when wallet connects
     useEffect(() => {
         if (connected) {
             fetchBalance();
@@ -90,50 +106,55 @@ const SwapComponent = () => {
         }
     }, [connected, fetchBalance]);
 
-    const fetchQuote = useCallback(async () => {
-        if (!amount || isNaN(amount)) {
-            setQuoteResponse(null);
-            setEstimatedIE(null);
-            return;
-        }
-        
-        const solAmount = parseFloat(amount);
-        if (solAmount <= 0) return;
-
-        try {
-            setLoading(true);
-            setError(null);
-            
-            const amountInLamports = Math.floor(solAmount * Math.pow(10, SOL_DECIMALS));
-            const response = await fetch(
-                `${JUPITER_QUOTE_API}?` + new URLSearchParams({
-                    inputMint: 'So11111111111111111111111111111111111111112',
-                    outputMint,
-                    amount: amountInLamports.toString(),
-                    slippageBps: SLIPPAGE_BPS.toString()
-                })
-            );
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch quote: ${response.statusText}`);
+    // Debounced quote fetch
+    const debouncedFetchQuote = useMemo(() => 
+        debounce(async (solAmount) => {
+            if (!solAmount || isNaN(solAmount) || solAmount <= 0) {
+                setQuoteResponse(null);
+                setEstimatedIE(null);
+                return;
             }
-            
-            const data = await response.json();
-            setQuoteResponse(data);
-            setEstimatedIE(data.outAmount / Math.pow(10, IE_DECIMALS));
-        } catch (error) {
-            console.error("Error fetching quote:", error);
-            setError(error.message || "Failed to fetch quote. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    }, [amount, outputMint]);
 
+            try {
+                setLoading(prev => ({ ...prev, quote: true }));
+                setError(null);
+                
+                const amountInLamports = Math.floor(solAmount * Math.pow(10, SOL_DECIMALS));
+                const response = await fetch(
+                    `${JUPITER_QUOTE_API}?` + new URLSearchParams({
+                        inputMint: 'So11111111111111111111111111111111111111112',
+                        outputMint,
+                        amount: amountInLamports.toString(),
+                        slippageBps: SLIPPAGE_BPS.toString()
+                    })
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch quote: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                setQuoteResponse(data);
+                setEstimatedIE(data.outAmount / Math.pow(10, IE_DECIMALS));
+            } catch (error) {
+                console.error("Error fetching quote:", error);
+                setError(error.message || "Failed to fetch quote. Please try again.");
+            } finally {
+                setLoading(prev => ({ ...prev, quote: false }));
+            }
+        }, 500),
+        [outputMint]
+    );
+
+    // Trigger quote fetch when amount changes
     useEffect(() => {
-        const debounceTimer = setTimeout(fetchQuote, 500);
-        return () => clearTimeout(debounceTimer);
-    }, [amount, fetchQuote]);
+        const solAmount = parseFloat(amount);
+        debouncedFetchQuote(solAmount);
+        
+        return () => debouncedFetchQuote.cancel();
+    }, [amount, debouncedFetchQuote]);
 
+    // Handle swap execution
     const handleSwap = async () => {
         if (!connected || !publicKey) {
             setError('Please connect your wallet first');
@@ -151,16 +172,17 @@ const SwapComponent = () => {
             return;
         }
         
-        if (solAmount > solBalance) {
-            setError(`Insufficient SOL balance! Your balance: ${solBalance.toFixed(4)} SOL`);
+        if (solAmount > (solBalance - MIN_SOL_RESERVE)) {
+            setError(`Insufficient SOL balance! Your balance: ${solBalance.toFixed(4)} SOL (Reserving ${MIN_SOL_RESERVE} SOL for fees)`);
             return;
         }
 
         try {
-            setLoading(true);
+            setLoading(prev => ({ ...prev, swap: true }));
             setError(null);
             setTxSuccess(null);
 
+            // Execute swap
             const swapResponse = await fetch(JUPITER_SWAP_API, {
                 method: 'POST',
                 headers: { 
@@ -175,33 +197,35 @@ const SwapComponent = () => {
             });
             
             if (!swapResponse.ok) {
-                throw new Error(`Swap failed with status ${swapResponse.status}`);
+                const errorData = await swapResponse.json().catch(() => ({}));
+                throw new Error(errorData.message || `Swap failed with status ${swapResponse.status}`);
             }
             
             const { swapTransaction } = await swapResponse.json();
             const transaction = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
             const txid = await sendTransaction(transaction, connection);
             
+            // Wait for confirmation with timeout
             await Promise.race([
                 connection.confirmTransaction(txid, 'confirmed'),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Transaction timeout')), 30000)
+                    setTimeout(() => reject(new Error('Transaction timeout')), TX_TIMEOUT)
                 )
             ]);
             
             setTxSuccess(txid);
-            fetchBalance();
+            fetchBalance(); // Refresh balance after successful swap
         } catch (error) {
             console.error("Swap error:", error);
             setError(error.message || "Swap failed. Please try again.");
         } finally {
-            setLoading(false);
+            setLoading(prev => ({ ...prev, swap: false }));
         }
     };
 
     const handleMaxClick = () => {
-        if (solBalance > 0) {
-            const maxAmount = Math.max(0, solBalance - 0.01);
+        if (solBalance > MIN_SOL_RESERVE) {
+            const maxAmount = Math.max(0, solBalance - MIN_SOL_RESERVE);
             setAmount(maxAmount.toFixed(4));
         }
     };
@@ -213,20 +237,34 @@ const SwapComponent = () => {
         }
     };
 
-    const isSwapDisabled = !connected || !amount || loading || !quoteResponse || parseFloat(amount) <= 0;
+    const isSwapDisabled = !connected || !amount || loading.quote || loading.swap || !quoteResponse || parseFloat(amount) <= 0;
+    const showPriceImpactWarning = quoteResponse?.priceImpactPct && (quoteResponse.priceImpactPct * 100) > PRICE_IMPACT_WARNING_THRESHOLD;
 
     return (
-        <div className="swap-component">
+        <div className={`swap-component ${isMobile ? 'mobile' : ''}`}>
             <h2>Swap SOL for $IE</h2>
             
-            <WalletMultiButton 
-                className="wallet-button"
-                startIcon={null} // Remove default icon for custom handling
-            />
+            <div className="wallet-connect-container">
+                <WalletMultiButton 
+                    className="wallet-button"
+                    startIcon={null}
+                />
+                {isMobile && (
+                    <div className="mobile-wallet-buttons">
+                        <button onClick={() => handleWalletSelect('Phantom')} className="phantom-button">
+                            Phantom
+                        </button>
+                        <button onClick={() => handleWalletSelect('Solflare')} className="solflare-button">
+                            Solflare
+                        </button>
+                    </div>
+                )}
+            </div>
             
             {connected && (
                 <p className="balance-display">
                     Your Balance: <span>{solBalance.toFixed(4)} SOL</span>
+                    {loading.balance && <span className="loading-indicator">↻</span>}
                 </p>
             )}
             
@@ -237,7 +275,7 @@ const SwapComponent = () => {
                         <button 
                             onClick={handleMaxClick} 
                             className="max-button" 
-                            disabled={solBalance <= 0}
+                            disabled={solBalance <= MIN_SOL_RESERVE || loading.balance}
                         >
                             MAX
                         </button>
@@ -251,19 +289,23 @@ const SwapComponent = () => {
                     value={amount}
                     onChange={handleAmountChange}
                     className="swap-input"
-                    disabled={!connected || loading}
+                    disabled={!connected || loading.quote}
                 />
             </div>
             
-            {loading && <div className="loading-spinner">Loading...</div>}
+            {loading.quote && <div className="loading-spinner">Fetching quote...</div>}
             
             {estimatedIE !== null && (
                 <div className="swap-details">
                     <p>Estimated $IE: {estimatedIE.toLocaleString(undefined, { maximumFractionDigits: 4 })}</p>
                     {quoteResponse?.priceImpactPct && (
-                        <p className={quoteResponse.priceImpactPct > 0.01 ? 'warning' : ''}>
+                        <p className={showPriceImpactWarning ? 'warning' : ''}>
                             Price Impact: {(quoteResponse.priceImpactPct * 100).toFixed(2)}%
+                            {showPriceImpactWarning && ' (High)'}
                         </p>
+                    )}
+                    {quoteResponse?.fee && (
+                        <p>Fee: {(quoteResponse.fee.mintFee / Math.pow(10, IE_DECIMALS)).toFixed(4)} $IE</p>
                     )}
                 </div>
             )}
@@ -294,7 +336,8 @@ const SwapComponent = () => {
                 className={`swap-button ${isSwapDisabled ? 'disabled' : ''}`}
                 disabled={isSwapDisabled}
             >
-                {loading ? 'Processing...' : 'Swap'}
+                {loading.swap ? 'Processing...' : 'Swap'}
+                {showPriceImpactWarning && !loading.swap && ' (High Impact)'}
             </button>
         </div>
     );
@@ -302,12 +345,9 @@ const SwapComponent = () => {
 
 const SwapComponentWithProviders = () => {
     const wallets = useMemo(() => [
-        new PhantomWalletAdapter({
-            endpoint: ALCHEMY_RPC_URL
-        }),
+        new PhantomWalletAdapter(),
         new SolflareWalletAdapter({ 
-            network: WalletAdapterNetwork.Mainnet,
-            endpoint: ALCHEMY_RPC_URL
+            network: WalletAdapterNetwork.Mainnet
         }),
     ], []);
 
@@ -317,9 +357,13 @@ const SwapComponentWithProviders = () => {
             autoConnect={true}
             onError={(error) => {
                 console.error('Wallet error:', error);
+                // You might want to add error state handling here
             }}
         >
-            <WalletModalProvider>
+            <WalletModalProvider
+                logo="/logo.png" // Add your logo here
+                featuredWallets={5}
+            >
                 <SwapComponent />
             </WalletModalProvider>
         </WalletProvider>
