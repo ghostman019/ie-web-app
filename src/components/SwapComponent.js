@@ -17,9 +17,10 @@ const SOL_DECIMALS = 9;
 const IE_DECIMALS = 9;
 const SLIPPAGE_BPS = 50; // 0.5%
 const MAX_RETRIES = 3;
+const WEBSITE_URL = 'https://internet-explorercto.de';
 
 const SwapComponent = () => {
-    const { publicKey, sendTransaction, connected } = useWallet();
+    const { publicKey, sendTransaction, connected, connect } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [quoteResponse, setQuoteResponse] = useState(null);
@@ -43,6 +44,24 @@ const SwapComponent = () => {
         }
     }, []);
 
+    const handleWalletSelect = (walletName) => {
+        if (!isMobile) return;
+        
+        let deeplinkUrl;
+        switch(walletName) {
+            case 'Phantom':
+                deeplinkUrl = `https://phantom.app/ul/browse/${WEBSITE_URL}?ref=${encodeURIComponent(window.location.href)}`;
+                break;
+            case 'Solflare':
+                deeplinkUrl = `https://solflare.com/browse?url=${encodeURIComponent(WEBSITE_URL)}`;
+                break;
+            default:
+                return;
+        }
+        
+        window.location.href = deeplinkUrl;
+    };
+
     const fetchBalance = useCallback(async () => {
         if (!publicKey) return;
         
@@ -53,7 +72,6 @@ const SwapComponent = () => {
             console.error("Error fetching balance:", err);
             setError("Failed to fetch balance. Please try again.");
             
-            // Retry logic
             if (retryCount < MAX_RETRIES) {
                 setTimeout(() => {
                     setRetryCount(retryCount + 1);
@@ -164,13 +182,13 @@ const SwapComponent = () => {
             const transaction = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
             const txid = await sendTransaction(transaction, connection);
             
-         // Wait for confirmation with timeout
-         await Promise.race([
-            connection.confirmTransaction(txid, 'confirmed'),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Transaction timeout')), 30000)
-            )
-        ]);
+            await Promise.race([
+                connection.confirmTransaction(txid, 'confirmed'),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Transaction timeout')), 30000)
+                )
+            ]);
+            
             setTxSuccess(txid);
             fetchBalance();
         } catch (error) {
@@ -183,7 +201,6 @@ const SwapComponent = () => {
 
     const handleMaxClick = () => {
         if (solBalance > 0) {
-            // Leave 0.01 SOL for transaction fees
             const maxAmount = Math.max(0, solBalance - 0.01);
             setAmount(maxAmount.toFixed(4));
         }
@@ -202,7 +219,10 @@ const SwapComponent = () => {
         <div className="swap-component">
             <h2>Swap SOL for $IE</h2>
             
-            <WalletMultiButton className="wallet-button" />
+            <WalletMultiButton 
+                className="wallet-button"
+                startIcon={null} // Remove default icon for custom handling
+            />
             
             {connected && (
                 <p className="balance-display">
@@ -280,25 +300,30 @@ const SwapComponent = () => {
     );
 };
 
-const SwapComponentWithProviders = () => (
-    <WalletProvider
-        wallets={useMemo(() => [
-            new PhantomWalletAdapter(),
-            new SolflareWalletAdapter({ network: WalletAdapterNetwork.Mainnet,
-                
-                endpoint: ALCHEMY_RPC_URL
+const SwapComponentWithProviders = () => {
+    const wallets = useMemo(() => [
+        new PhantomWalletAdapter({
+            endpoint: ALCHEMY_RPC_URL
+        }),
+        new SolflareWalletAdapter({ 
+            network: WalletAdapterNetwork.Mainnet,
+            endpoint: ALCHEMY_RPC_URL
+        }),
+    ], []);
 
-             }),
-        ], [])}
-        autoConnect={true}
-        onError={(error) => {
-            console.error('Wallet error:', error);
-        }}
-    >
-        <WalletModalProvider>
-            <SwapComponent />
-        </WalletModalProvider>
-    </WalletProvider>
-);
+    return (
+        <WalletProvider
+            wallets={wallets}
+            autoConnect={true}
+            onError={(error) => {
+                console.error('Wallet error:', error);
+            }}
+        >
+            <WalletModalProvider>
+                <SwapComponent />
+            </WalletModalProvider>
+        </WalletProvider>
+    );
+};
 
 export default SwapComponentWithProviders;
