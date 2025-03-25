@@ -6,7 +6,7 @@ import fetch from 'cross-fetch';
 import './SwapComponent.css';
 
 const SwapComponent = () => {
-    const { publicKey, sendTransaction, connected } = useWallet();
+    const { publicKey, sendTransaction, connected, wallet } = useWallet();
     const [amount, setAmount] = useState('');
     const [estimatedIE, setEstimatedIE] = useState(null);
     const [quoteResponse, setQuoteResponse] = useState(null);
@@ -14,6 +14,12 @@ const SwapComponent = () => {
     const [error, setError] = useState(null);
     const [txSuccess, setTxSuccess] = useState(null);
     const [solBalance, setSolBalance] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile browser
+    useEffect(() => {
+        setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    }, []);
 
     const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
@@ -82,6 +88,15 @@ const SwapComponent = () => {
             setError(null);
             setTxSuccess(null);
 
+            // Mobile-specific handling
+            if (isMobile && wallet?.adapter) {
+                try {
+                    await wallet.adapter.connect();
+                } catch (e) {
+                    console.log("Mobile wallet connection attempt");
+                }
+            }
+
             const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -91,16 +106,36 @@ const SwapComponent = () => {
                     wrapAndUnwrapSol: true,
                 })
             });
-            if (!swapResponse.ok) throw new Error(`Swap request failed: ${swapResponse.statusText}`);
+            
+            if (!swapResponse.ok) {
+                const errorData = await swapResponse.json();
+                throw new Error(errorData.message || `Swap request failed: ${swapResponse.statusText}`);
+            }
             
             const { swapTransaction } = await swapResponse.json();
             const transaction = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
+            
+            // Mobile wallet handling
+            if (isMobile && wallet?.adapter?.sendTransaction) {
+                try {
+                    const txid = await wallet.adapter.sendTransaction(transaction, connection);
+                    await connection.confirmTransaction(txid);
+                    setTxSuccess(txid);
+                    return;
+                } catch (e) {
+                    console.log("Falling back to standard sendTransaction");
+                }
+            }
+            
+            // Standard transaction sending
             const txid = await sendTransaction(transaction, connection);
             await connection.confirmTransaction(txid);
             setTxSuccess(txid);
         } catch (error) {
             console.error("Swap error:", error);
-            setError(error.message);
+            setError(error.message.includes('User rejected') 
+                ? "Transaction was cancelled" 
+                : error.message);
         } finally {
             setLoading(false);
         }
@@ -112,7 +147,7 @@ const SwapComponent = () => {
         <div className="swap-component">
             <h2>Swap SOL for $IE</h2>
             <WalletMultiButton />
-            <p>Your Balance: {solBalance.toFixed(4)} SOL</p>
+            {connected && <p>Your Balance: {solBalance.toFixed(4)} SOL</p>}
             <div className="input-container">
                 <div className="input-header">
                     <span>Amount (SOL)</span>
@@ -140,7 +175,11 @@ const SwapComponent = () => {
                     Swap successful! <a href={`https://solscan.io/tx/${txSuccess}`} target="_blank" rel="noopener noreferrer">View transaction</a>
                 </div>
             )}
-            <button onClick={handleSwap} className="swap-button" disabled={!connected || !amount || loading || !quoteResponse}>
+            <button 
+                onClick={handleSwap} 
+                className="swap-button" 
+                disabled={!connected || !amount || loading || !quoteResponse}
+            >
                 {loading ? 'Processing...' : 'Swap'}
             </button>
         </div>

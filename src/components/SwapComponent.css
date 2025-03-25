@@ -48,3 +48,9 @@
 .swap-button:hover {
   background-color: #45a049;
 }
+
+.loading-spinner {
+  margin: 10px 0;
+  color: #666;
+  text-align: center;
+}
