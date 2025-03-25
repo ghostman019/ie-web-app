@@ -1,127 +1,142 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Connection, Transaction } from '@solana/web3.js';
+import { Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { NATIVE_MINT } from '@solana/spl-token';
 
 const SwapComponent = () => {
     const { publicKey, sendTransaction } = useWallet();
-    const [amount, setAmount] = useState<string>('');
-    const [estimatedIE, setEstimatedIE] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+    const [amount, setAmount] = useState('');
+    const [estimatedIE, setEstimatedIE] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [priorityFee, setPriorityFee] = useState<string>('0');
     
-    // Configuration
     const RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
     const connection = new Connection(RPC_URL, "confirmed");
 
     // Token Addresses
-    const TOKENS = {
-        SOL: 'So11111111111111111111111111111111111111112',
-        IE: 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA'
-    };
+    const ieTokenAddress = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA';
+    const solTokenAddress = NATIVE_MINT.toBase58();
 
     // API Endpoints
-    const API_ENDPOINTS = {
-        QUOTE: 'https://api.jup.ag/swap/v1/quote',
-        SWAP: 'https://api.jup.ag/swap/v1/swap'
-    };
-
-    const fetchQuote = async (solAmount: number) => {
-        try {
-            const params = new URLSearchParams({
-                inputMint: TOKENS.SOL,
-                outputMint: TOKENS.IE,
-                amount: (solAmount * 1e9).toString(),
-                slippageBps: '50'
-            });
-
-            const response = await fetch(`${API_ENDPOINTS.QUOTE}?${params}`);
-            
-            if (!response.ok) {
-                throw new Error(`Quote failed: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (err) {
-            console.error("Quote error:", err);
-            throw err;
-        }
+    const API_URLS = {
+        SWAP_HOST: 'https://transaction-v1.raydium.io',
+        BASE_HOST: 'https://api.raydium.io',
+        PRIORITY_FEE: '/v2/priority-fee'
     };
 
     useEffect(() => {
-        const debounceTimer = setTimeout(async () => {
+        const fetchPriorityFee = async () => {
+            try {
+                const response = await fetch(`${API_URLS.BASE_HOST}${API_URLS.PRIORITY_FEE}`);
+                const data = await response.json();
+                if (data?.data?.default?.h) {
+                    setPriorityFee(String(data.data.default.h));
+                }
+            } catch (error) {
+                console.error("Failed to fetch priority fee", error);
+            }
+        };
+        
+        fetchPriorityFee();
+    }, []);
+
+    useEffect(() => {
+        const fetchQuote = async () => {
             if (!amount || parseFloat(amount) <= 0) {
                 setEstimatedIE(null);
                 return;
             }
-
+            
             try {
-                const quote = await fetchQuote(parseFloat(amount));
+                const response = await fetch(
+                    `${API_URLS.SWAP_HOST}/compute/swap-base-in?` +
+                    `inputMint=${solTokenAddress}&` +
+                    `outputMint=${ieTokenAddress}&` +
+                    `amount=${parseFloat(amount) * 1e9}&` +
+                    `slippageBps=50&` + // 0.5% slippage
+                    `txVersion=V0`
+                );
+                
+                if (!response.ok) throw new Error(`Failed to fetch quote: ${response.status}`);
+                
+                const quote = await response.json();
                 setEstimatedIE(quote?.outAmount ? (quote.outAmount / 1e9).toFixed(4) : null);
-                setError(null);
-            } catch (err) {
+            } catch (error) {
+                console.error("Quote error:", error);
                 setEstimatedIE(null);
-                setError("Failed to get quote. Please try again.");
             }
-        }, 500);
-
+        };
+        
+        const debounceTimer = setTimeout(fetchQuote, 500);
         return () => clearTimeout(debounceTimer);
     }, [amount]);
 
     const handleSwap = async () => {
         if (!publicKey) {
-            setError("Please connect your wallet first!");
+            alert('Please connect your wallet!');
             return;
         }
 
         const solAmount = parseFloat(amount);
-        if (isNaN(solAmount)) {
-            setError("Please enter a valid amount");
+        if (solAmount <= 0) {
+            alert("Enter a valid amount!");
             return;
         }
 
         setLoading(true);
-        setError(null);
-
+        
         try {
             // 1. Get Quote
-            const quote = await fetchQuote(solAmount);
+            const quoteResponse = await fetch(
+                `${API_URLS.SWAP_HOST}/compute/swap-base-in?` +
+                `inputMint=${solTokenAddress}&` +
+                `outputMint=${ieTokenAddress}&` +
+                `amount=${solAmount * 1e9}&` +
+                `slippageBps=50&` +
+                `txVersion=V0`
+            );
+            
+            if (!quoteResponse.ok) throw new Error(await quoteResponse.text());
+            const quote = await quoteResponse.json();
 
             // 2. Build Swap Transaction
-            const swapResponse = await fetch(API_ENDPOINTS.SWAP, {
+            const swapResponse = await fetch(`${API_URLS.SWAP_HOST}/transaction/swap-base-in`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    quoteResponse: quote,
-                    userPublicKey: publicKey.toString(),
-                    wrapAndUnwrapSol: true,
-                    dynamicComputeUnitLimit: true,
-                    asLegacyTransaction: false
+                    computeUnitPriceMicroLamports: priorityFee,
+                    swapResponse: quote,
+                    txVersion: 'V0',
+                    wallet: publicKey.toBase58(),
+                    wrapSol: true,
+                    unwrapSol: false,
+                    inputAccount: undefined, // Using SOL as input
+                    outputAccount: undefined // Default to ATA
                 }),
             });
-
-            if (!swapResponse.ok) {
-                const errorData = await swapResponse.json();
-                throw new Error(errorData.message || "Swap failed");
-            }
-
+            
+            if (!swapResponse.ok) throw new Error(await swapResponse.text());
             const swapResult = await swapResponse.json();
 
             // 3. Send Transaction
-            const rawTransaction = Buffer.from(swapResult.swapTransaction, 'base64');
-            const transaction = Transaction.from(rawTransaction);
+            const txBuf = Buffer.from(swapResult.data[0].transaction, 'base64');
+            const transaction = VersionedTransaction.deserialize(txBuf);
             
             const signature = await sendTransaction(transaction, connection);
-            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+            
+            await connection.confirmTransaction({
+                blockhash,
+                lastValidBlockHeight,
+                signature
+            }, 'confirmed');
 
-            if (confirmation.value.err) {
-                throw new Error("Transaction failed on chain");
-            }
-
-            alert(`Swap successful! View on Solscan: https://solscan.io/tx/${signature}`);
-        } catch (err) {
-            console.error('Swap error:', err);
-            setError(err.message || "Swap failed. Please try again.");
+            alert(`Swap successful! Txn: https://solscan.io/tx/${signature}`);
+            
+        } catch (error) {
+            console.error('Swap failed:', error);
+            alert(`Swap failed: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -134,38 +149,26 @@ const SwapComponent = () => {
             
             <input
                 type="number"
+                placeholder="Amount in SOL"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="Amount in SOL"
                 className="swap-input"
                 min="0.01"
                 step="0.01"
                 disabled={loading}
             />
             
-            {estimatedIE && (
-                <p className="swap-estimate">
-                    ≈ {estimatedIE} $IE (estimated)
-                </p>
+            {estimatedIE !== null && (
+                <p className="swap-estimate">Estimated $IE: {estimatedIE}</p>
             )}
             
             <button 
-                onClick={handleSwap}
-                disabled={!publicKey || !amount || loading}
+                onClick={handleSwap} 
                 className="swap-button"
+                disabled={!publicKey || !amount || loading}
             >
                 {loading ? 'Swapping...' : 'Swap'}
             </button>
-            
-            {error && (
-                <div className="error-message">
-                    {error}
-                </div>
-            )}
-            
-            <div className="api-info">
-                Using Jupiter v1 API (free tier)
-            </div>
         </div>
     );
 };
