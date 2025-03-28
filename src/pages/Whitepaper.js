@@ -12,7 +12,7 @@ const WhitePaper = () => {
   useEffect(() => {
     const fetchWhitePaper = async () => {
       try {
-        const response = await fetch('https://raw.githubusercontent.com/MichaelMireku/INTERNET-EXPLORER-sol/main/README.md');
+        const response = await fetch('https://raw.githubusercontent.com/MichaelMireku/INTERNET1.5/main/docs/Whitepaper.md');
         const text = await response.text();
         setContent(text);
         setLoading(false);
