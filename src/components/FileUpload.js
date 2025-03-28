@@ -41,11 +41,24 @@ const FileUpload = () => {
             ctx.fillStyle = "rgba(255, 0, 255, 0.2)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 📺 Apply scanline effect
-            for (let y = 0; y < canvas.height; y += 3) {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+            // 📺 Apply stronger scanline effect
+            for (let y = 0; y < canvas.height; y += 2) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
                 ctx.fillRect(0, y, canvas.width, 1);
             }
+
+            // 🌈 Add chromatic aberration (RGB shift)
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = data[i + 4] || data[i]; // Red shift
+                data[i + 2] = data[i - 4] || data[i + 2]; // Blue shift
+            }
+            ctx.putImageData(imageData, 1, 0);
+
+            // 🌀 Apply slight curvature effect
+            ctx.globalCompositeOperation = "source-over";
+            ctx.filter = "url(#crt-warp)";
 
             // 🔄 Update Preview with Effects
             setPreviewURL(canvas.toDataURL("image/png"));
@@ -103,9 +116,8 @@ const FileUpload = () => {
 
             {previewURL && (
                <div className="preview-container">
-               <canvas ref={canvasRef} className="vaporwave-effect"></canvas>
-           </div>
-           
+                   <canvas ref={canvasRef} className="vaporwave-effect"></canvas>
+               </div>
             )}
 
             <button onClick={handleDownload} disabled={!previewURL}>
