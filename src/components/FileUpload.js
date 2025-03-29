@@ -1,11 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
 import "../styles/FileUpload.css";
-import watermarkImage from '../assets/watermark.png'; // Make sure to add your watermark.png to this path
-
-const ffmpeg = new FFmpeg();
-ffmpeg.load();
 
 const FileUpload = () => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -13,274 +8,198 @@ const FileUpload = () => {
     const [uploadStatus, setUploadStatus] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [mediaType, setMediaType] = useState("");
-    const [quality, setQuality] = useState(0.9);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [crtPowered, setCrtPowered] = useState(false);
-    const [watermark, setWatermark] = useState(null);
+    const [fileType, setFileType] = useState("");
+    const [processing, setProcessing] = useState(false);
+    const [powerOn, setPowerOn] = useState(true);
 
     const canvasRef = useRef(null);
-
-    // Load watermark on component mount
-    useEffect(() => {
-        const loadWatermark = async () => {
-            const img = new Image();
-            img.src = watermarkImage;
-            img.onload = () => {
-                setWatermark(img);
-            };
-        };
-        loadWatermark();
-    }, []);
+    const videoRef = useRef(null);
+    const mediaRef = useRef(null);
+    const animationFrameRef = useRef(null);
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-        if (file) {
-            setCrtPowered(false);
-            setSelectedFile(file);
-            setErrorMessage("");
-            setPreviewURL(URL.createObjectURL(file));
-            setMediaType(file.type.startsWith("video") ? "video" : "image");
-            
-            setTimeout(() => {
-                setCrtPowered(true);
-            }, 300);
+        if (!file) return;
+
+        setSelectedFile(file);
+        setErrorMessage("");
+        setPreviewURL("");
+        setProcessing(true);
+        setPowerOn(true);
+
+        if (file.type.startsWith("image/")) {
+            setFileType(file.type === "image/gif" ? "gif" : "image");
+        } else if (file.type.startsWith("video/")) {
+            setFileType("video");
+        } else {
+            setErrorMessage("Unsupported file type. Please upload an image, GIF, or video.");
+            return;
         }
+
+        const url = URL.createObjectURL(file);
+        setPreviewURL(url);
     };
 
-    const applyEffectsToImage = () => {
-        if (!selectedFile || !previewURL || mediaType !== "image") return;
-        
-        setIsProcessing(true);
-        const img = new Image();
-        img.src = previewURL;
-        img.crossOrigin = "Anonymous";
-        img.onload = () => {
-            const canvas = canvasRef.current;
-            const ctx = canvas.getContext("2d");
-            canvas.width = img.width;
-            canvas.height = img.height;
+    const applyEffectsToFrame = (ctx, width, height) => {
+        ctx.globalCompositeOperation = "hue";
+        ctx.fillStyle = "rgba(255, 0, 255, 0.2)";
+        ctx.fillRect(0, 0, width, height);
+
+        for (let y = 0; y < height; y += 2) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+            ctx.fillRect(0, y, width, 1);
+        }
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = data[i + 4] || data[i];
+            data[i + 2] = data[i - 4] || data[i + 2];
+        }
+        ctx.putImageData(imageData, 1, 0);
+    };
+
+    const processMedia = () => {
+        if (!previewURL || !fileType || !powerOn) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+
+        if (fileType === "image") {
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                applyEffectsToFrame(ctx, canvas.width, canvas.height);
+                setProcessing(false);
+            };
+            img.src = previewURL;
+        } else if (fileType === "gif" || fileType === "video") {
+            const media = fileType === "video" ? videoRef.current : mediaRef.current;
             
-            // Draw original image
-            ctx.drawImage(img, 0, 0);
-            
-            // Draw watermark if loaded (first pass)
-            if (watermark) {
-                const watermarkSize = Math.min(img.width, img.height) * 0.15;
-                const watermarkX = img.width - watermarkSize - 20;
-                const watermarkY = 20;
+            if (!media) return;
+
+            media.onloadedmetadata = () => {
+                canvas.width = media.videoWidth;
+                canvas.height = media.videoHeight;
                 
-                ctx.drawImage(
-                    watermark, 
-                    watermarkX, 
-                    watermarkY, 
-                    watermarkSize, 
-                    watermarkSize * (watermark.height / watermark.width)
-                );
-            }
-            
-            // Enhanced Vaporwave effects
-            ctx.globalCompositeOperation = "overlay";
-            
-            // Add gradient overlay for vaporwave colors
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, "rgba(255, 0, 255, 0.3)");
-            gradient.addColorStop(0.5, "rgba(0, 255, 255, 0.3)");
-            gradient.addColorStop(1, "rgba(255, 255, 0, 0.3)");
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Add scanlines and CRT effects
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            
-            // Enhanced CRT effects with chromatic aberration
-            for (let i = 0; i < data.length; i += 4) {
-                // Color shift (vaporwave effect)
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                
-                // Boost pink/blue tones
-                data[i] = Math.min(255, r * 1.2);
-                data[i + 1] = g * 0.8;
-                data[i + 2] = Math.min(255, b * 1.3);
-                
-                // RGB separation (chromatic aberration)
-                if (i % 16 === 0) {
-                    data[i] = data[i + 8] || data[i];
-                    data[i + 1] = data[i - 4] || data[i + 1];
-                    data[i + 2] = data[i - 8] || data[i + 2];
-                }
-                
-                // Add subtle noise
-                if (Math.random() > 0.95) {
-                    const noise = Math.random() * 40 - 20;
-                    data[i] += noise;
-                    data[i + 1] += noise;
-                    data[i + 2] += noise;
-                }
-            }
-            
-            // Add scanlines
-            for (let y = 0; y < canvas.height; y += 2) {
-                for (let x = 0; x < canvas.width; x++) {
-                    const index = (y * canvas.width + x) * 4;
-                    data[index] *= 0.8;
-                    data[index + 1] *= 0.8;
-                    data[index + 2] *= 0.8;
-                }
-            }
-            
-            // Add vignette effect
-            for (let y = 0; y < canvas.height; y++) {
-                for (let x = 0; x < canvas.width; x++) {
-                    const index = (y * canvas.width + x) * 4;
-                    const distX = Math.abs(x - canvas.width / 2) / (canvas.width / 2);
-                    const distY = Math.abs(y - canvas.height / 2) / (canvas.height / 2);
-                    const dist = Math.sqrt(distX * distX + distY * distY) * 1.2;
+                const drawFrame = () => {
+                    if (media.paused || media.ended || !powerOn) return;
                     
-                    data[index] *= 1 - dist * 0.5;
-                    data[index + 1] *= 1 - dist * 0.5;
-                    data[index + 2] *= 1 - dist * 0.5;
+                    ctx.drawImage(media, 0, 0, canvas.width, canvas.height);
+                    applyEffectsToFrame(ctx, canvas.width, canvas.height);
+                    animationFrameRef.current = requestAnimationFrame(drawFrame);
+                };
+
+                media.onplay = () => {
+                    animationFrameRef.current = requestAnimationFrame(drawFrame);
+                };
+
+                if (fileType === "gif") {
+                    media.onload = () => {
+                        animationFrameRef.current = requestAnimationFrame(drawFrame);
+                    };
                 }
-            }
-            
-            ctx.putImageData(imageData, 0, 0);
-            
-            // Redraw watermark after effects to ensure it gets processed too
-            if (watermark) {
-                const watermarkSize = Math.min(img.width, img.height) * 0.15;
-                const watermarkX = img.width - watermarkSize - 20;
-                const watermarkY = 20;
-                const prevComposite = ctx.globalCompositeOperation;
-                
-                ctx.globalCompositeOperation = "overlay";
-                ctx.drawImage(
-                    watermark, 
-                    watermarkX, 
-                    watermarkY, 
-                    watermarkSize, 
-                    watermarkSize * (watermark.height / watermark.width)
-                );
-                ctx.globalCompositeOperation = prevComposite;
-            }
-            
-            // Determine output format
-            const hasTransparency = checkForTransparency(data);
-            let format, outputQuality;
-            
-            if (hasTransparency) {
-                format = "image/png";
-                outputQuality = 1.0;
-            } else {
-                format = "image/jpeg";
-                outputQuality = quality;
-            }
-            
-            setPreviewURL(canvas.toDataURL(format, outputQuality));
-            setIsProcessing(false);
-        };
-    };
 
-    const checkForTransparency = (imageData) => {
-        for (let i = 3; i < imageData.length; i += 4) {
-            if (imageData[i] < 255) {
-                return true;
-            }
-        }
-        return false;
-    };
-
-    const applyEffectsToVideo = async () => {
-        if (!selectedFile || mediaType !== "video") return;
-        
-        setIsProcessing(true);
-        try {
-            await ffmpeg.write("input.mp4", await fetch(previewURL).then(res => res.arrayBuffer()));
-            await ffmpeg.write("watermark.png", await fetch(watermarkImage).then(res => res.arrayBuffer()));
-            
-            await ffmpeg.exec([
-                "-i", "input.mp4",
-                "-i", "watermark.png",
-                "-filter_complex", 
-                `[0:v][1:v]overlay=main_w-overlay_w-20:20[watermarked];
-                 [watermarked]split=3[original][r][b];
-                 [r]channelmixer=rr=1:gr=0:br=0:ar=1,boxblur=1:cr=0,pad=w=iw+10:h=ih:x=5:y=0:color=black@0[rshift];
-                 [b]channelmixer=rr=0:gr=0:br=1:ar=1,boxblur=1:cr=0,pad=w=iw+10:h=ih:x=-5:y=0:color=black@0[bshift];
-                 [original][rshift]overlay=x=5:y=0[tmp];
-                 [tmp][bshift]overlay=x=-5:y=0,
-                 eq=brightness=0.05:contrast=1.1:saturation=1.3,
-                 hue=h=20:s=1,
-                 split=2[original][bleed];
-                 [bleed]boxblur=10:1[blurred];
-                 [original][blurred]blend=all_mode='screen':all_opacity=0.3,
-                 curves=r='0/0 0.5/0.8 1/1':g='0/0 0.5/0.5 1/0.7':b='0/0 0.5/0.9 1/1',
-                 noise=alls=20:allf=t`,
-                "-c:v", "libx264",
-                "-crf", "18",
-                "-preset", "slow",
-                "-x264-params", "ref=6:deblock=-1,-1",
-                "-af", "asetrate=44100*0.8,aresample=44100,atempo=1/0.8",
-                "-c:a", "aac",
-                "-b:a", "192k",
-                "output.mp4"
-            ]);
-            
-            const data = await ffmpeg.read("output.mp4");
-            const url = URL.createObjectURL(new Blob([data.buffer], { type: "video/mp4" }));
-            setPreviewURL(url);
-        } catch (error) {
-            setErrorMessage("Video processing failed. Please try again.");
-            console.error("Video processing error:", error);
-        } finally {
-            setIsProcessing(false);
+                setProcessing(false);
+            };
         }
     };
 
     useEffect(() => {
-        if (previewURL && selectedFile) {
-            if (mediaType === "image") applyEffectsToImage();
-            else if (mediaType === "video") applyEffectsToVideo();
-        }
-    }, [selectedFile, quality, watermark]);
+        processMedia();
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [previewURL, fileType, powerOn]);
 
-    const handleDownload = () => {
-        if (!selectedFile) return;
+    const handleDownload = async () => {
+        if (!selectedFile || processing || !powerOn) return;
+
+        const canvas = canvasRef.current;
         const link = document.createElement("a");
-        link.href = previewURL;
-        link.download = `vaporwave_${selectedFile.name}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+
+        try {
+            if (fileType === "video") {
+                const stream = canvas.captureStream();
+                const mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: "video/webm"
+                });
+
+                const chunks = [];
+                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                
+                return new Promise((resolve) => {
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: "video/webm" });
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `vaporwave_${selectedFile.name.replace(/\.[^/.]+$/, "")}.webm`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        resolve();
+                    };
+                    
+                    mediaRecorder.start();
+                    setTimeout(() => mediaRecorder.stop(), 5000);
+                });
+            } else {
+                setTimeout(() => {
+                    canvas.toBlob((blob) => {
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `vaporwave_${selectedFile.name.replace(/\.[^/.]+$/, "")}` + 
+                                        (fileType === "gif" ? ".gif" : ".jpg");
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }, fileType === "gif" ? "image/gif" : "image/jpeg", 0.85);
+                }, 100);
+            }
+        } catch (error) {
+            setErrorMessage("Failed to process download. Please try again.");
+        }
     };
 
     const handleUpload = async () => {
-        if (!selectedFile) {
-            setErrorMessage("Please select a file first!");
+        if (!selectedFile || processing || !powerOn) {
+            setErrorMessage("Please select a file and wait for processing to complete!");
             return;
         }
+
         setIsUploading(true);
         setUploadStatus("");
         setErrorMessage("");
-        
-        const response = await fetch(previewURL);
-        const blob = await response.blob();
-        const processedFile = new File([blob], selectedFile.name, { type: blob.type });
-        
-        const formData = new FormData();
-        formData.append("file", processedFile);
-        
+
         try {
+            const canvas = canvasRef.current;
+            const processedBlob = await new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, fileType === "gif" ? "image/gif" : fileType === "video" ? "video/webm" : "image/jpeg", 0.85);
+            });
+
+            const formData = new FormData();
+            formData.append("file", processedBlob, `vaporwave_${selectedFile.name}`);
+
             const response = await axios.post("http://localhost:5000/upload", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
+
             setUploadStatus(`✅ Upload successful! File ID: ${response.data.file_id}`);
         } catch (error) {
             setErrorMessage("❌ Upload failed. Please try again.");
-            console.error("Upload error:", error);
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    const togglePower = () => {
+        setPowerOn(!powerOn);
+        if (!powerOn && previewURL) {
+            setProcessing(true);
         }
     };
 
@@ -288,64 +207,49 @@ const FileUpload = () => {
         <div className="file-upload">
             <h2>Upload with Vaporwave & CRT Effect</h2>
             <input type="file" accept="image/*,video/*" onChange={handleFileChange} />
-            
-            {selectedFile && (
-                <div className="quality-control">
-                    <label>Quality: {Math.round(quality * 100)}%</label>
-                    <input 
-                        type="range" 
-                        min="0.5" 
-                        max="1" 
-                        step="0.05" 
-                        value={quality} 
-                        onChange={(e) => setQuality(parseFloat(e.target.value))}
-                        disabled={isProcessing}
+
+            {processing && <p className="processing-status">Processing media...</p>}
+
+            <div className="preview-container" style={{ display: previewURL && !processing ? "block" : "none" }}>
+                {fileType === "video" && (
+                    <video 
+                        ref={videoRef}
+                        src={previewURL}
+                        style={{ display: "none" }}
+                        autoPlay
+                        loop
+                        muted
                     />
-                    <p className="quality-info">
-                        {quality >= 0.9 ? "Highest quality (larger file)" : 
-                         quality >= 0.7 ? "Balanced quality and size" : 
-                         "Smaller file size (lower quality)"}
-                    </p>
+                )}
+                {fileType === "gif" && (
+                    <img 
+                        ref={mediaRef}
+                        src={previewURL}
+                        style={{ display: "none" }}
+                        alt="Processing GIF"
+                    />
+                )}
+                
+                <canvas 
+                    ref={canvasRef}
+                    className="vaporwave-effect"
+                    style={{ opacity: powerOn ? 1 : 0 }}
+                />
+                <div className="scanlines" style={{ opacity: powerOn ? 1 : 0 }}></div>
+                <div className="color-bleed" style={{ opacity: powerOn ? 1 : 0 }}></div>
+                <div className="color-wash" style={{ opacity: powerOn ? 1 : 0 }}></div>
+                
+                <div className="crt-power-button" onClick={togglePower}>
+                    <span className="power-button-text">{powerOn ? "ON" : "OFF"}</span>
                 </div>
-            )}
-
-            {previewURL && (
-                <div className={`preview-container ${crtPowered ? 'powered' : ''}`}>
-                    <canvas ref={canvasRef} className="vaporwave-effect"></canvas>
-                    
-                    <div className="scanlines"></div>
-                    <div className="vignette"></div>
-                    <div className="color-bleed"></div>
-                    <div className="color-wash"></div>
-                    <div className="crt-glass"></div>
-                    <div className="chromatic-aberration"></div>
-                    
-                    {mediaType === "image" && (
-                        <img src={previewURL} alt="Preview" className="processed-preview" />
-                    )}
-                    
-                    {mediaType === "video" && (
-                        <video src={previewURL} controls className="vaporwave-effect" />
-                    )}
-                </div>
-            )}
-
-            {isProcessing && <p className="processing-status">Processing media...</p>}
+            </div>
 
             <div className="button-container">
-                <button 
-                    onClick={handleDownload} 
-                    disabled={!previewURL || isProcessing}
-                    className="download-button"
-                >
-                    Download Preview
+                <button onClick={handleDownload} disabled={!previewURL || processing || !powerOn}>
+                    Download Processed Version
                 </button>
-                <button 
-                    onClick={handleUpload} 
-                    disabled={isUploading || !selectedFile || isProcessing}
-                    className="upload-button"
-                >
-                    {isUploading ? "Uploading..." : "Upload"}
+                <button onClick={handleUpload} disabled={isUploading || !selectedFile || processing || !powerOn}>
+                    {isUploading ? "Uploading..." : "Upload Processed"}
                 </button>
             </div>
 
