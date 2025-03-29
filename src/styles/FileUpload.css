@@ -140,7 +140,7 @@
 /* 🖥️ Enhanced CRT Monitor Effect */
 .preview-container {
   position: relative;
-  width: 100%;
+  width: calc(100% - 30px);
   max-width: 500px;
   margin: 20px auto;
   overflow: hidden;
@@ -153,6 +153,7 @@
     0 0 0 12px #111,
     0 5px 15px rgba(0, 0, 0, 0.7);
   transform: perspective(500px) rotateX(2deg);
+  transform-origin: center center;
 }
 
 /* CRT Power button indicator */
@@ -402,8 +403,10 @@ video.vaporwave-effect {
   }
   
   .preview-container {
+    width: calc(100% - 20px);
     border-radius: 10px;
     padding: 10px;
+    transform: perspective(500px) rotateX(1deg);
   }
 }
 
@@ -421,6 +424,7 @@ video.vaporwave-effect {
   }
   
   .preview-container {
-    transform: perspective(500px) rotateX(1deg);
+    width: calc(100% - 10px);
+    transform: perspective(500px) rotateX(0.5deg);
   }
 }
