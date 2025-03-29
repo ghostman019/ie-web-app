@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import "../styles/FileUpload.css";
+import watermarkImage from '../assets/watermark.png'; // Make sure to add your watermark.png to this path
 
 const ffmpeg = new FFmpeg();
 ffmpeg.load();
@@ -16,8 +17,21 @@ const FileUpload = () => {
     const [quality, setQuality] = useState(0.9);
     const [isProcessing, setIsProcessing] = useState(false);
     const [crtPowered, setCrtPowered] = useState(false);
+    const [watermark, setWatermark] = useState(null);
 
     const canvasRef = useRef(null);
+
+    // Load watermark on component mount
+    useEffect(() => {
+        const loadWatermark = async () => {
+            const img = new Image();
+            img.src = watermarkImage;
+            img.onload = () => {
+                setWatermark(img);
+            };
+        };
+        loadWatermark();
+    }, []);
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -50,6 +64,21 @@ const FileUpload = () => {
             // Draw original image
             ctx.drawImage(img, 0, 0);
             
+            // Draw watermark if loaded (first pass)
+            if (watermark) {
+                const watermarkSize = Math.min(img.width, img.height) * 0.15;
+                const watermarkX = img.width - watermarkSize - 20;
+                const watermarkY = 20;
+                
+                ctx.drawImage(
+                    watermark, 
+                    watermarkX, 
+                    watermarkY, 
+                    watermarkSize, 
+                    watermarkSize * (watermark.height / watermark.width)
+                );
+            }
+            
             // Enhanced Vaporwave effects
             ctx.globalCompositeOperation = "overlay";
             
@@ -65,7 +94,7 @@ const FileUpload = () => {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
             
-            // Enhanced CRT effects
+            // Enhanced CRT effects with chromatic aberration
             for (let i = 0; i < data.length; i += 4) {
                 // Color shift (vaporwave effect)
                 const r = data[i];
@@ -73,14 +102,15 @@ const FileUpload = () => {
                 const b = data[i + 2];
                 
                 // Boost pink/blue tones
-                data[i] = Math.min(255, r * 1.2); // Boost reds
-                data[i + 1] = g * 0.8; // Reduce greens
-                data[i + 2] = Math.min(255, b * 1.3); // Boost blues
+                data[i] = Math.min(255, r * 1.2);
+                data[i + 1] = g * 0.8;
+                data[i + 2] = Math.min(255, b * 1.3);
                 
-                // RGB separation (CRT color bleed)
+                // RGB separation (chromatic aberration)
                 if (i % 16 === 0) {
-                    data[i] = data[i + 4] || data[i];
-                    data[i + 2] = data[i - 4] || data[i + 2];
+                    data[i] = data[i + 8] || data[i];
+                    data[i + 1] = data[i - 4] || data[i + 1];
+                    data[i + 2] = data[i - 8] || data[i + 2];
                 }
                 
                 // Add subtle noise
@@ -118,6 +148,24 @@ const FileUpload = () => {
             
             ctx.putImageData(imageData, 0, 0);
             
+            // Redraw watermark after effects to ensure it gets processed too
+            if (watermark) {
+                const watermarkSize = Math.min(img.width, img.height) * 0.15;
+                const watermarkX = img.width - watermarkSize - 20;
+                const watermarkY = 20;
+                const prevComposite = ctx.globalCompositeOperation;
+                
+                ctx.globalCompositeOperation = "overlay";
+                ctx.drawImage(
+                    watermark, 
+                    watermarkX, 
+                    watermarkY, 
+                    watermarkSize, 
+                    watermarkSize * (watermark.height / watermark.width)
+                );
+                ctx.globalCompositeOperation = prevComposite;
+            }
+            
             // Determine output format
             const hasTransparency = checkForTransparency(data);
             let format, outputQuality;
@@ -150,24 +198,29 @@ const FileUpload = () => {
         setIsProcessing(true);
         try {
             await ffmpeg.write("input.mp4", await fetch(previewURL).then(res => res.arrayBuffer()));
+            await ffmpeg.write("watermark.png", await fetch(watermarkImage).then(res => res.arrayBuffer()));
             
-            // Enhanced FFmpeg command with vaporwave effects
             await ffmpeg.exec([
                 "-i", "input.mp4",
-                // Color grading for vaporwave aesthetic
-                "-vf", "eq=brightness=0.05:contrast=1.1:saturation=1.3," + 
-                       "hue=h=20:s=1," + 
-                       "split=2[original][bleed];" +
-                       "[bleed]boxblur=10:1[blurred];" +
-                       "[original][blurred]blend=all_mode='screen':all_opacity=0.3," +
-                       "curves=r='0/0 0.5/0.8 1/1':g='0/0 0.5/0.5 1/0.7':b='0/0 0.5/0.9 1/1'," +
-                       "noise=alls=20:allf=t",
-                // Video codec settings
+                "-i", "watermark.png",
+                "-filter_complex", 
+                `[0:v][1:v]overlay=main_w-overlay_w-20:20[watermarked];
+                 [watermarked]split=3[original][r][b];
+                 [r]channelmixer=rr=1:gr=0:br=0:ar=1,boxblur=1:cr=0,pad=w=iw+10:h=ih:x=5:y=0:color=black@0[rshift];
+                 [b]channelmixer=rr=0:gr=0:br=1:ar=1,boxblur=1:cr=0,pad=w=iw+10:h=ih:x=-5:y=0:color=black@0[bshift];
+                 [original][rshift]overlay=x=5:y=0[tmp];
+                 [tmp][bshift]overlay=x=-5:y=0,
+                 eq=brightness=0.05:contrast=1.1:saturation=1.3,
+                 hue=h=20:s=1,
+                 split=2[original][bleed];
+                 [bleed]boxblur=10:1[blurred];
+                 [original][blurred]blend=all_mode='screen':all_opacity=0.3,
+                 curves=r='0/0 0.5/0.8 1/1':g='0/0 0.5/0.5 1/0.7':b='0/0 0.5/0.9 1/1',
+                 noise=alls=20:allf=t`,
                 "-c:v", "libx264",
-                "-crf", "18", // Higher quality
+                "-crf", "18",
                 "-preset", "slow",
                 "-x264-params", "ref=6:deblock=-1,-1",
-                // Audio effects
                 "-af", "asetrate=44100*0.8,aresample=44100,atempo=1/0.8",
                 "-c:a", "aac",
                 "-b:a", "192k",
@@ -190,7 +243,7 @@ const FileUpload = () => {
             if (mediaType === "image") applyEffectsToImage();
             else if (mediaType === "video") applyEffectsToVideo();
         }
-    }, [selectedFile, quality]);
+    }, [selectedFile, quality, watermark]);
 
     const handleDownload = () => {
         if (!selectedFile) return;
@@ -265,6 +318,7 @@ const FileUpload = () => {
                     <div className="color-bleed"></div>
                     <div className="color-wash"></div>
                     <div className="crt-glass"></div>
+                    <div className="chromatic-aberration"></div>
                     
                     {mediaType === "image" && (
                         <img src={previewURL} alt="Preview" className="processed-preview" />
