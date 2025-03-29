@@ -44,6 +44,7 @@
     "react-dom": "^18.0.0",
     "react-markdown": "^10.0.1",
     "react-router-dom": "^6.2.0",
+    "recordrtc": "^5.6.2",
     "rehype-add-classes": "^1.0.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",

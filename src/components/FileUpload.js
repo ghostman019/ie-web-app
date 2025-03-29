@@ -14,7 +14,6 @@ const FileUpload = () => {
 
     const canvasRef = useRef(null);
     const videoRef = useRef(null);
-    const mediaRef = useRef(null);
     const animationFrameRef = useRef(null);
 
     const handleFileChange = (event) => {
@@ -67,6 +66,7 @@ const FileUpload = () => {
 
         if (fileType === "image") {
             const img = new Image();
+            img.crossOrigin = "Anonymous";
             img.onload = () => {
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -74,36 +74,74 @@ const FileUpload = () => {
                 applyEffectsToFrame(ctx, canvas.width, canvas.height);
                 setProcessing(false);
             };
-            img.src = previewURL;
-        } else if (fileType === "gif" || fileType === "video") {
-            const media = fileType === "video" ? videoRef.current : mediaRef.current;
-            
-            if (!media) return;
-
-            media.onloadedmetadata = () => {
-                canvas.width = media.videoWidth;
-                canvas.height = media.videoHeight;
-                
-                const drawFrame = () => {
-                    if (media.paused || media.ended || !powerOn) return;
-                    
-                    ctx.drawImage(media, 0, 0, canvas.width, canvas.height);
-                    applyEffectsToFrame(ctx, canvas.width, canvas.height);
-                    animationFrameRef.current = requestAnimationFrame(drawFrame);
-                };
-
-                media.onplay = () => {
-                    animationFrameRef.current = requestAnimationFrame(drawFrame);
-                };
-
-                if (fileType === "gif") {
-                    media.onload = () => {
-                        animationFrameRef.current = requestAnimationFrame(drawFrame);
-                    };
-                }
-
+            img.onerror = () => {
+                setErrorMessage("Failed to load image");
                 setProcessing(false);
             };
+            img.src = previewURL;
+        } 
+        else if (fileType === "gif") {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                let lastTime = 0;
+                const processFrame = (timestamp) => {
+                    if (!img.complete) {
+                        animationFrameRef.current = requestAnimationFrame(processFrame);
+                        return;
+                    }
+
+                    if (timestamp - lastTime > 100) { // Throttle to ~10fps
+                        lastTime = timestamp;
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        applyEffectsToFrame(ctx, canvas.width, canvas.height);
+                    }
+                    animationFrameRef.current = requestAnimationFrame(processFrame);
+                };
+                
+                animationFrameRef.current = requestAnimationFrame(processFrame);
+                setProcessing(false);
+            };
+            img.onerror = () => {
+                setErrorMessage("Failed to load GIF");
+                setProcessing(false);
+            };
+            img.src = previewURL;
+        } 
+        else if (fileType === "video") {
+            const video = videoRef.current;
+            video.onloadedmetadata = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                const processFrame = () => {
+                    if (video.paused || video.ended) {
+                        setProcessing(false);
+                        return;
+                    }
+                    
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    applyEffectsToFrame(ctx, canvas.width, canvas.height);
+                    animationFrameRef.current = requestAnimationFrame(processFrame);
+                };
+                
+                video.onplay = () => {
+                    animationFrameRef.current = requestAnimationFrame(processFrame);
+                };
+                
+                video.onerror = () => {
+                    setErrorMessage("Failed to load video");
+                    setProcessing(false);
+                };
+                
+                setProcessing(false);
+            };
+            video.src = previewURL;
+            video.load();
         }
     };
 
@@ -124,13 +162,19 @@ const FileUpload = () => {
 
         try {
             if (fileType === "video") {
-                const stream = canvas.captureStream();
+                const stream = canvas.captureStream(30);
                 const mediaRecorder = new MediaRecorder(stream, {
-                    mimeType: "video/webm"
+                    mimeType: 'video/webm;codecs=vp9',
+                    videoBitsPerSecond: 2500000
                 });
 
                 const chunks = [];
-                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                mediaRecorder.ondataavailable = (e) => {
+                    chunks.push(e.data);
+                    if (mediaRecorder.state === "recording") {
+                        mediaRecorder.stop();
+                    }
+                };
                 
                 return new Promise((resolve) => {
                     mediaRecorder.onstop = () => {
@@ -139,34 +183,46 @@ const FileUpload = () => {
                         link.download = `vaporwave_${selectedFile.name.replace(/\.[^/.]+$/, "")}.webm`;
                         document.body.appendChild(link);
                         link.click();
-                        document.body.removeChild(link);
-                        resolve();
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(link.href);
+                        }, 100);
+                        resolve(true);
                     };
                     
                     mediaRecorder.start();
-                    setTimeout(() => mediaRecorder.stop(), 5000);
+                    setTimeout(() => {
+                        if (mediaRecorder.state === "recording") {
+                            mediaRecorder.requestData();
+                        }
+                    }, 3000);
                 });
             } else {
-                setTimeout(() => {
+                return new Promise((resolve) => {
                     canvas.toBlob((blob) => {
                         link.href = URL.createObjectURL(blob);
                         link.download = `vaporwave_${selectedFile.name.replace(/\.[^/.]+$/, "")}` + 
                                         (fileType === "gif" ? ".gif" : ".jpg");
                         document.body.appendChild(link);
                         link.click();
-                        document.body.removeChild(link);
-                    }, fileType === "gif" ? "image/gif" : "image/jpeg", 0.85);
-                }, 100);
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(link.href);
+                        }, 100);
+                        resolve(true);
+                    }, fileType === "gif" ? "image/gif" : "image/jpeg", 0.95);
+                });
             }
         } catch (error) {
-            setErrorMessage("Failed to process download. Please try again.");
+            setErrorMessage(`Failed to export: ${error.message}`);
+            return false;
         }
     };
 
     const handleUpload = async () => {
         if (!selectedFile || processing || !powerOn) {
             setErrorMessage("Please select a file and wait for processing to complete!");
-            return;
+            return false;
         }
 
         setIsUploading(true);
@@ -189,8 +245,10 @@ const FileUpload = () => {
             });
 
             setUploadStatus(`✅ Upload successful! File ID: ${response.data.file_id}`);
+            return true;
         } catch (error) {
             setErrorMessage("❌ Upload failed. Please try again.");
+            return false;
         } finally {
             setIsUploading(false);
         }
@@ -219,14 +277,7 @@ const FileUpload = () => {
                         autoPlay
                         loop
                         muted
-                    />
-                )}
-                {fileType === "gif" && (
-                    <img 
-                        ref={mediaRef}
-                        src={previewURL}
-                        style={{ display: "none" }}
-                        alt="Processing GIF"
+                        playsInline
                     />
                 )}
                 
@@ -239,7 +290,10 @@ const FileUpload = () => {
                 <div className="color-bleed" style={{ opacity: powerOn ? 1 : 0 }}></div>
                 <div className="color-wash" style={{ opacity: powerOn ? 1 : 0 }}></div>
                 
-                <div className="crt-power-button" onClick={togglePower}>
+                <div 
+                    className={`crt-power-button ${powerOn ? '' : 'off'}`} 
+                    onClick={togglePower}
+                >
                     <span className="power-button-text">{powerOn ? "ON" : "OFF"}</span>
                 </div>
             </div>
