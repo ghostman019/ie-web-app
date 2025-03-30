@@ -4,10 +4,8 @@ import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-r
 import { 
   PhantomWalletAdapter,
   SolflareWalletAdapter,
- 
   TorusWalletAdapter,
   LedgerWalletAdapter,
-
 } from '@solana/wallet-adapter-wallets';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PublicKey, Connection, VersionedTransaction } from '@solana/web3.js';
@@ -25,6 +23,7 @@ const SLIPPAGE_BPS = 50;
 const MAX_RETRIES = 3;
 const WEBSITE_URL = 'https://internet-explorercto.de';
 const TRANSACTION_TIMEOUT = 30000;
+const MIN_SOL_AMOUNT = 0.01;
 
 const SwapComponent = () => {
   const { publicKey, sendTransaction, connected, connect } = useWallet();
@@ -85,6 +84,7 @@ const SwapComponent = () => {
     try {
       const balance = await connection.getBalance(publicKey);
       setSolBalance(balance / Math.pow(10, SOL_DECIMALS));
+      setRetryCount(0);
     } catch (err) {
       console.error("Error fetching balance:", err);
       setError("Failed to fetch balance. Please try again.");
@@ -115,27 +115,42 @@ const SwapComponent = () => {
     }
     
     const solAmount = parseFloat(amount);
-    if (solAmount <= 0) return;
+    if (solAmount <= 0 || solAmount < MIN_SOL_AMOUNT) {
+      setError(`Minimum swap amount is ${MIN_SOL_AMOUNT} SOL`);
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
       
       const amountInLamports = Math.floor(solAmount * Math.pow(10, SOL_DECIMALS));
-      const response = await fetch(
-        `${JUPITER_QUOTE_API}?` + new URLSearchParams({
-          inputMint: 'So11111111111111111111111111111111111111112',
-          outputMint,
-          amount: amountInLamports.toString(),
-          slippageBps: SLIPPAGE_BPS.toString()
-        })
-      );
+      const params = new URLSearchParams({
+        inputMint: 'So11111111111111111111111111111111111111112',
+        outputMint,
+        amount: amountInLamports.toString(),
+        slippageBps: SLIPPAGE_BPS.toString()
+      });
+
+      const response = await fetch(`${JUPITER_QUOTE_API}?${params}`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch quote: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || 
+          `Failed to fetch quote: ${response.statusText} (${response.status})`
+        );
       }
       
       const data = await response.json();
+      if (!data.outAmount) {
+        throw new Error("Invalid quote response from server");
+      }
+      
       setQuoteResponse(data);
       setEstimatedIE(data.outAmount / Math.pow(10, IE_DECIMALS));
     } catch (error) {
@@ -173,6 +188,11 @@ const SwapComponent = () => {
       return;
     }
 
+    if (solAmount < MIN_SOL_AMOUNT) {
+      setError(`Minimum swap amount is ${MIN_SOL_AMOUNT} SOL`);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -192,19 +212,27 @@ const SwapComponent = () => {
       });
       
       if (!swapResponse.ok) {
-        throw new Error(`Swap failed with status ${swapResponse.status}`);
+        const errorData = await swapResponse.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || 
+          `Swap failed with status ${swapResponse.status}`
+        );
       }
       
       const { swapTransaction } = await swapResponse.json();
       const transaction = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
       const txid = await sendTransaction(transaction, connection);
       
-      await Promise.race([
+      const confirmation = await Promise.race([
         connection.confirmTransaction(txid, 'confirmed'),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Transaction timeout')), TRANSACTION_TIMEOUT)
         )
       ]);
+      
+      if (confirmation.value.err) {
+        throw new Error("Transaction failed");
+      }
       
       setTxSuccess(txid);
       fetchBalance();
@@ -217,7 +245,7 @@ const SwapComponent = () => {
   };
 
   const handleMaxClick = () => {
-    if (solBalance > 0) {
+    if (solBalance > MIN_SOL_AMOUNT) {
       const maxAmount = Math.max(0, solBalance - 0.01);
       setAmount(maxAmount.toFixed(4));
     }
@@ -227,10 +255,11 @@ const SwapComponent = () => {
     const value = e.target.value;
     if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
       setAmount(value);
+      setError(null);
     }
   };
 
-  const isSwapDisabled = !connected || !amount || loading || !quoteResponse || parseFloat(amount) <= 0;
+  const isSwapDisabled = !connected || !amount || loading || !quoteResponse || parseFloat(amount) <= 0 || parseFloat(amount) < MIN_SOL_AMOUNT;
 
   return (
     <div className="swap-component">
@@ -250,7 +279,7 @@ const SwapComponent = () => {
       <div className="input-container">
         <div className="input-header">
           <label htmlFor="amount-input">Amount (SOL)</label>
-          {connected && (
+          {connected && solBalance > MIN_SOL_AMOUNT && (
             <button 
               onClick={handleMaxClick} 
               className="max-button" 
@@ -270,6 +299,7 @@ const SwapComponent = () => {
           className="swap-input"
           disabled={!connected || loading}
         />
+        <p className="minimum-amount">Minimum: {MIN_SOL_AMOUNT} SOL</p>
       </div>
       
       {loading && <div className="loading-spinner">Loading...</div>}
@@ -322,10 +352,8 @@ const SwapComponentWithProviders = () => {
     const adapters = [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-   
       new TorusWalletAdapter(),
       new LedgerWalletAdapter()
-   
     ];
     
     return adapters.map(adapter => {
