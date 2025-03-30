@@ -389,3 +389,50 @@ canvas.vaporwave-effect {
     transform: perspective(500px) rotateX(0.5deg);
   }
 }
+
+/* Add these to your existing CSS */
+.filename, .file-info {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hash-display {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  color: #00eaff;
+  transition: all 0.2s ease;
+}
+
+.hash-display:hover {
+  color: #ff00ff;
+  text-decoration: underline;
+}
+
+.copy-hint {
+  font-size: 0.7em;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.status-text {
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.document-preview .filename {
+  max-width: 250px;
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .filename, .file-info {
+      max-width: 200px;
+  }
+  
+  .copy-hint {
+      display: none;
+  }
+}
