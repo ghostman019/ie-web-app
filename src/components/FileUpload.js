@@ -83,48 +83,19 @@ const FileUpload = () => {
             const x = width - watermarkWidth - padding;
             const y = padding;
             
-            // Create off-screen canvas for watermark processing
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = watermarkWidth;
-            tempCanvas.height = watermarkHeight;
-            const tempCtx = tempCanvas.getContext('2d');
+            // Draw watermark
+            ctx.drawImage(watermark, x, y, watermarkWidth, watermarkHeight);
             
-            // Draw watermark on temp canvas
-            tempCtx.drawImage(watermark, 0, 0, watermarkWidth, watermarkHeight);
+            // Apply effects to watermark area
+            const watermarkImageData = ctx.getImageData(x, y, watermarkWidth, watermarkHeight);
+            const watermarkData = watermarkImageData.data;
             
-            // Get pixel data and enhance only non-transparent areas
-            const watermarkData = tempCtx.getImageData(0, 0, watermarkWidth, watermarkHeight);
-            const pixels = watermarkData.data;
-            
-            for (let i = 0; i < pixels.length; i += 4) {
-                if (pixels[i + 3] > 0) { // Only process non-transparent pixels
-                    // Boost colors while maintaining transparency
-                    pixels[i] = Math.min(pixels[i] * 1.4, 255); // Red
-                    pixels[i + 1] = Math.min(pixels[i + 1] * 0.8, 255); // Green
-                    pixels[i + 2] = Math.min(pixels[i + 2] * 1.6, 255); // Blue
-                    // Keep original alpha channel
-                }
+            for (let i = 0; i < watermarkData.length; i += 4) {
+                watermarkData[i] = watermarkData[i + 4] || watermarkData[i];
+                watermarkData[i + 2] = watermarkData[i - 4] || watermarkData[i + 2];
             }
-            tempCtx.putImageData(watermarkData, 0, 0);
             
-            // Apply glow effect only to the watermark content
-            ctx.shadowColor = 'rgba(255, 105, 180, 0.7)';
-            ctx.shadowBlur = 12;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-            
-            // Draw with overlay blend mode first
-            ctx.globalCompositeOperation = 'overlay';
-            ctx.drawImage(tempCanvas, x, y);
-            
-            // Draw again with lighter blend mode
-            ctx.globalCompositeOperation = 'lighten';
-            ctx.drawImage(tempCanvas, x, y);
-            
-            // Reset shadow and composite operation
-            ctx.shadowColor = 'transparent';
-            ctx.globalCompositeOperation = 'source-over';
-            
+            ctx.putImageData(watermarkImageData, x, y);
             ctx.restore();
         }
     };
