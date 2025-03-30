@@ -1,90 +1,238 @@
-
-
 .swap-component {
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Creates consistent spacing between elements */
-    align-items: center;
-    background-color: #f0f0f0;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
-    margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  background: linear-gradient(145deg, #1a1a2e, #16213e);
+  padding: 28px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  max-width: 450px;
+  margin: 0 auto;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .swap-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #333;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #fff;
+  text-align: center;
+  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.wallet-button {
-    margin-bottom: 20px;
-}
-
-.button-spacer {
-    height: 20px;
-} /* New spacing when wallet is not connected */
-
-.swap-input {
-    margin-top: 10px;
-    padding: 10px;
-    border: 1px solid #808080;
-    border-radius: 5px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.swap-button {
-    margin-top: 10px;
-    padding: 12px;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.swap-button:hover {
-    background-color: #45a049;
-}
-
-.swap-button.disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-/* Add these new styles */
 .wallet-button-container {
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: center;
+  width: 100%;
+  margin-bottom: 20px;
 }
 
-
-.input-container {
-  margin-top: 8px; /* Additional spacing above input */
-}
-
-/* Existing styles... */
 .wallet-button {
-  background: #512da8;
+  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
   color: white;
-  border-radius: 8px;
-  padding: 10px 16px;
+  border-radius: 12px;
+  padding: 12px 24px;
   font-size: 16px;
   font-weight: 600;
   transition: all 0.3s ease;
+  width: 100%;
+  border: none;
+  box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
 }
 
 .wallet-button:hover {
-  background: #4527a0;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(106, 17, 203, 0.4);
+  background: linear-gradient(90deg, #5a0cb1 0%, #1a65f0 100%);
 }
 
-/* ... rest of your existing CSS */
+.balance-display {
+  width: 100%;
+  text-align: right;
+  font-size: 14px;
+  color: #a0a0c0;
+  margin-bottom: -10px;
+}
+
+.balance-display span {
+  font-weight: 600;
+  color: #fff;
+}
+
+.input-container {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.input-header label {
+  font-size: 14px;
+  color: #a0a0c0;
+  font-weight: 500;
+}
+
+.max-button {
+  background: rgba(106, 17, 203, 0.2);
+  color: #6a11cb;
+  border: 1px solid #6a11cb;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.max-button:hover {
+  background: rgba(106, 17, 203, 0.3);
+}
+
+.max-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.swap-input {
+  width: 100%;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 18px;
+  color: #fff;
+  outline: none;
+  transition: border 0.3s ease;
+}
+
+.swap-input:focus {
+  border-color: #6a11cb;
+}
+
+.minimum-amount {
+  font-size: 12px;
+  color: #a0a0c0;
+  margin-top: 8px;
+  text-align: right;
+}
+
+.swap-details {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+}
+
+.swap-details p {
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.swap-details p.warning {
+  color: #ff6b6b;
+}
+
+.swap-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
+}
+
+.swap-button:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(106, 17, 203, 0.4);
+}
+
+.swap-button.disabled {
+  background: #3a3a5c;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #6a11cb;
+  animation: spin 1s ease-in-out infinite;
+  margin: 10px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-message, .success-message {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.error-message {
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid rgba(255, 71, 87, 0.2);
+  color: #ff6b6b;
+}
+
+.success-message {
+  background: rgba(46, 213, 115, 0.1);
+  border: 1px solid rgba(46, 213, 115, 0.2);
+  color: #2ed573;
+}
+
+.tx-link {
+  color: #6a11cb;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-block;
+  margin-top: 8px;
+  transition: color 0.2s ease;
+}
+
+.tx-link:hover {
+  color: #2575fc;
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .swap-component {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  
+  .swap-title {
+    font-size: 24px;
+  }
+  
+  .swap-button, .wallet-button {
+    padding: 14px;
+  }
+}

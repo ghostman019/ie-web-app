@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { FaCopy, FaExternalLinkAlt } from 'react-icons/fa';
 
 const ALCHEMY_RPC_URL = "https://solana-mainnet.g.alchemy.com/v2/NKGjWYpBo0Ow6ncywj03AKxzl1PbX7Vt";
 
 const WalletTracker = ({ walletAddress, tokenMintAddress }) => {
   const [balance, setBalance] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const connection = new Connection(ALCHEMY_RPC_URL, "confirmed");
@@ -43,21 +45,44 @@ const WalletTracker = ({ walletAddress, tokenMintAddress }) => {
 
   const handleCopyAndRedirect = () => {
     navigator.clipboard.writeText(walletAddress).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
       window.open(`https://solscan.io/account/${walletAddress}`, '_blank');
     }).catch(err => console.error('Clipboard copy failed:', err));
   };
 
   return (
-    <div className="wallet-tracker p-4 bg-gray-800 rounded-lg shadow-lg text-white">
-      <h2 className="text-2xl font-semibold mb-2 text-center">Marketing Wallet</h2>
-      <p className="text-lg mt-2 text-center">Balance: {balance.toLocaleString()} $IE</p>
-      <div className="flex justify-center mt-4">
-        <button
-          onClick={handleCopyAndRedirect}
-          className="bg-blue-500 hover:bg-blue-600 text-black font-semibold px-4 py-2 rounded-lg transition duration-300"
-        >
-          Copy MW Address & Go to Solscan
-        </button>
+    <div className="wallet-tracker-container">
+      <div className="wallet-tracker-card">
+        <h2 className="wallet-tracker-title">Marketing Wallet</h2>
+        
+        <div className="wallet-balance-display">
+          <span className="balance-label">Balance:</span>
+          <span className="balance-amount">{balance.toLocaleString()} $IE</span>
+        </div>
+
+        <div className="wallet-address-section">
+          <div className="wallet-address">
+            {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+          </div>
+          <button 
+            onClick={handleCopyAndRedirect}
+            className="wallet-action-button"
+          >
+            {copied ? (
+              'Copied!'
+            ) : (
+              <>
+                <FaCopy className="icon" />
+                <FaExternalLinkAlt className="icon" />
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="wallet-refresh-info">
+          <span className="refresh-text">Auto-refreshes every 30 seconds</span>
+        </div>
       </div>
     </div>
   );

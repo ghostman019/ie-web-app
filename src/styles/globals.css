@@ -271,3 +271,133 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* Wallet Tracker Styles */
+.wallet-tracker-container {
+  width: 100%;
+  max-width: 450px;
+  margin: 20px auto;
+}
+
+.wallet-tracker-card {
+  background: linear-gradient(145deg, rgba(26, 0, 51, 0.8), rgba(51, 0, 102, 0.8));
+  border: 1px solid rgba(255, 0, 255, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(106, 17, 203, 0.3);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.wallet-tracker-card:hover {
+  box-shadow: 0 12px 40px rgba(106, 17, 203, 0.4);
+  transform: translateY(-2px);
+}
+
+.wallet-tracker-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 102, 255, 0.6);
+  letter-spacing: 1px;
+}
+
+.wallet-balance-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 0, 255, 0.2);
+}
+
+.balance-label {
+  font-size: 1rem;
+  color: rgba(255, 204, 255, 0.8);
+}
+
+.balance-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 102, 255, 0.6);
+}
+
+.wallet-address-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.wallet-address {
+  flex: 1;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  font-family: monospace;
+  color: #fff;
+  border: 1px solid rgba(255, 0, 255, 0.2);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wallet-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.wallet-action-button:hover {
+  background: linear-gradient(90deg, #5a0cb1 0%, #1a65f0 100%);
+  box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+}
+
+.wallet-action-button .icon {
+  font-size: 1rem;
+}
+
+.wallet-refresh-info {
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 204, 255, 0.6);
+  margin-top: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .wallet-tracker-card {
+    padding: 18px;
+  }
+  
+  .wallet-tracker-title {
+    font-size: 1.3rem;
+  }
+  
+  .balance-amount {
+    font-size: 1.3rem;
+  }
+  
+  .wallet-address-section {
+    flex-direction: column;
+  }
+  
+  .wallet-action-button {
+    width: 100%;
+  }
+}
