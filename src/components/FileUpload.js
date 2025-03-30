@@ -83,16 +83,29 @@ const FileUpload = () => {
             const x = width - watermarkWidth - padding;
             const y = padding;
             
-            // Draw watermark
+            // Draw watermark with enhanced visibility
+            ctx.globalAlpha = 0.8; // Increased opacity
+            ctx.shadowColor = 'rgba(255, 105, 180, 0.7)'; // Pink glow
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Draw the watermark multiple times with different blends for visibility
+            ctx.globalCompositeOperation = 'lighten';
+            ctx.drawImage(watermark, x, y, watermarkWidth, watermarkHeight);
+            
+            ctx.globalCompositeOperation = 'overlay';
             ctx.drawImage(watermark, x, y, watermarkWidth, watermarkHeight);
             
             // Apply effects to watermark area
             const watermarkImageData = ctx.getImageData(x, y, watermarkWidth, watermarkHeight);
             const watermarkData = watermarkImageData.data;
             
+            // Less aggressive effect on watermark to maintain visibility
             for (let i = 0; i < watermarkData.length; i += 4) {
-                watermarkData[i] = watermarkData[i + 4] || watermarkData[i];
-                watermarkData[i + 2] = watermarkData[i - 4] || watermarkData[i + 2];
+                watermarkData[i] = Math.min(watermarkData[i] * 1.2, 255); // Boost red slightly
+                watermarkData[i + 1] = watermarkData[i + 1] * 0.9; // Reduce green
+                watermarkData[i + 2] = Math.min(watermarkData[i + 2] * 1.3, 255); // Boost blue more
             }
             
             ctx.putImageData(watermarkImageData, x, y);
