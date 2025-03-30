@@ -83,32 +83,48 @@ const FileUpload = () => {
             const x = width - watermarkWidth - padding;
             const y = padding;
             
-            // Draw watermark with enhanced visibility
-            ctx.globalAlpha = 0.8; // Increased opacity
-            ctx.shadowColor = 'rgba(255, 105, 180, 0.7)'; // Pink glow
-            ctx.shadowBlur = 10;
+            // Create off-screen canvas for watermark processing
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = watermarkWidth;
+            tempCanvas.height = watermarkHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Draw watermark on temp canvas
+            tempCtx.drawImage(watermark, 0, 0, watermarkWidth, watermarkHeight);
+            
+            // Get pixel data and enhance only non-transparent areas
+            const watermarkData = tempCtx.getImageData(0, 0, watermarkWidth, watermarkHeight);
+            const pixels = watermarkData.data;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                if (pixels[i + 3] > 0) { // Only process non-transparent pixels
+                    // Boost colors while maintaining transparency
+                    pixels[i] = Math.min(pixels[i] * 1.4, 255); // Red
+                    pixels[i + 1] = Math.min(pixels[i + 1] * 0.8, 255); // Green
+                    pixels[i + 2] = Math.min(pixels[i + 2] * 1.6, 255); // Blue
+                    // Keep original alpha channel
+                }
+            }
+            tempCtx.putImageData(watermarkData, 0, 0);
+            
+            // Apply glow effect only to the watermark content
+            ctx.shadowColor = 'rgba(255, 105, 180, 0.7)';
+            ctx.shadowBlur = 12;
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
             
-            // Draw the watermark multiple times with different blends for visibility
-            ctx.globalCompositeOperation = 'lighten';
-            ctx.drawImage(watermark, x, y, watermarkWidth, watermarkHeight);
-            
+            // Draw with overlay blend mode first
             ctx.globalCompositeOperation = 'overlay';
-            ctx.drawImage(watermark, x, y, watermarkWidth, watermarkHeight);
+            ctx.drawImage(tempCanvas, x, y);
             
-            // Apply effects to watermark area
-            const watermarkImageData = ctx.getImageData(x, y, watermarkWidth, watermarkHeight);
-            const watermarkData = watermarkImageData.data;
+            // Draw again with lighter blend mode
+            ctx.globalCompositeOperation = 'lighten';
+            ctx.drawImage(tempCanvas, x, y);
             
-            // Less aggressive effect on watermark to maintain visibility
-            for (let i = 0; i < watermarkData.length; i += 4) {
-                watermarkData[i] = Math.min(watermarkData[i] * 1.2, 255); // Boost red slightly
-                watermarkData[i + 1] = watermarkData[i + 1] * 0.9; // Reduce green
-                watermarkData[i + 2] = Math.min(watermarkData[i + 2] * 1.3, 255); // Boost blue more
-            }
+            // Reset shadow and composite operation
+            ctx.shadowColor = 'transparent';
+            ctx.globalCompositeOperation = 'source-over';
             
-            ctx.putImageData(watermarkImageData, x, y);
             ctx.restore();
         }
     };
