@@ -460,7 +460,7 @@ const FileUpload = () => {
                 formData.append('file', selectedFile, uploadFileName);
             }
 
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://thisisit-693312308351.europe-west1.run.app';
+            const apiUrl = process.env.REACT_APP_API_URL || 'https://permastoreit-server-693312308351.europe-west1.run.app/upload'; // Default URL if not set in .env
             const response = await axios.post(apiUrl, formData, {
                 onUploadProgress: (progressEvent) => {
                      if (progressEvent.lengthComputable && progressEvent.total) {
