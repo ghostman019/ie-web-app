@@ -460,7 +460,7 @@ const FileUpload = () => {
                 formData.append('file', selectedFile, uploadFileName);
             }
 
-            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/upload';
+            const apiUrl = process.env.REACT_APP_API_URL || 'https://thisisit-693312308351.europe-west1.run.app';
             const response = await axios.post(apiUrl, formData, {
                 onUploadProgress: (progressEvent) => {
                      if (progressEvent.lengthComputable && progressEvent.total) {
