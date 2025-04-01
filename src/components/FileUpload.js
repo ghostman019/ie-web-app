@@ -58,7 +58,7 @@ const FileUpload = () => {
     const truncateText = (text, maxLength = 20) => {
         if (!text) return '';
         if (text.length <= maxLength) return text;
-        return `${text.substring(0, maxLength / 2)}...${text.substring(text.length - maxLength / 2)}`;
+        return `<span class="math-inline">\{text\.substring\(0, maxLength / 2\)\}\.\.\.</span>{text.substring(text.length - maxLength / 2)}`;
     };
 
     const copyToClipboard = (text) => {
@@ -67,7 +67,8 @@ const FileUpload = () => {
              setTimeout(() => {
                  // Only revert if the hash hasn't changed (prevent overwriting newer status)
                  if (resultHash === text) {
-                    setUploadStatus(`✅ Upload successful! Hash: ${renderHash(text)}`);
+                     // Re-render the status with the clickable hash
+                     setUploadStatus(<>✅ Upload successful! Hash: {renderHash(text)}</>);
                  }
              }, 2000);
         }).catch(err => {
@@ -75,9 +76,10 @@ const FileUpload = () => {
              setUploadStatus(`❌ Failed to copy hash.`);
               setTimeout(() => {
                  if (resultHash === text) {
-                    setUploadStatus(`✅ Upload successful! Hash: ${renderHash(text)}`);
+                     // Re-render the status with the clickable hash
+                     setUploadStatus(<>✅ Upload successful! Hash: {renderHash(text)}</>);
                  }
-             }, 2000);
+              }, 2000);
         });
     };
 
@@ -195,7 +197,7 @@ const FileUpload = () => {
             const data = imageData.data;
             for (let i = 0; i < data.length; i += 4) {
                 // Check bounds before accessing neighbor pixels
-                data[i] = data[i + 4] !== undefined ? data[i+4] : data[i];           // R takes R from pixel ahead
+                data[i] = data[i + 4] !== undefined ? data[i+4] : data[i];                 // R takes R from pixel ahead
                 data[i + 2] = data[i - 4] !== undefined ? data[i-4] : data[i + 2]; // B takes B from pixel behind
             }
             ctx.putImageData(imageData, 0, 0);
@@ -237,7 +239,7 @@ const FileUpload = () => {
                  for (let i = 0; i < wData.length; i += 4) {
                      // Example effect: enhance magenta/cyan slightly
                      wData[i] = Math.min(wData[i] * 1.2, 255);       // R
-                     wData[i + 1] *= 0.8;                           // G
+                     wData[i + 1] *= 0.8;                         // G
                      wData[i + 2] = Math.min(wData[i + 2] * 1.3, 255); // B
                  }
                  ctx.putImageData(watermarkData, x, y);
@@ -256,11 +258,11 @@ const FileUpload = () => {
         let videoError = false; // Flag specific to video loading error
 
         const handleVideoError = (e) => {
-              if (!isActive) return;
-              console.error('Video Error:', e);
-              setErrorMessage('Failed to load or play video.');
-              setProcessing(false);
-              videoError = true; // Set flag
+             if (!isActive) return;
+             console.error('Video Error:', e);
+             setErrorMessage('Failed to load or play video.');
+             setProcessing(false);
+             videoError = true; // Set flag
          };
 
         const process = async () => {
@@ -295,7 +297,7 @@ const FileUpload = () => {
                  else if (fileType === 'gif') {
                      const img = new Image();
                      img.onload = () => {
-                        if (!isActive) return;
+                         if (!isActive) return;
                          canvas.width = img.naturalWidth;
                          canvas.height = img.naturalHeight;
                          ctx.drawImage(img, 0, 0); // Draw first frame
@@ -320,7 +322,7 @@ const FileUpload = () => {
                           applyEffectsToFrame(ctx, canvas.width, canvas.height);
                           setProcessing(false);
                           if (!video.paused) { // Start animation only if playing
-                             animationFrameRef.current = requestAnimationFrame(processVideoFrame);
+                              animationFrameRef.current = requestAnimationFrame(processVideoFrame);
                           }
                       };
 
@@ -334,15 +336,15 @@ const FileUpload = () => {
                            if (!isActive) return;
                            setProcessing(false);
                            if (animationFrameRef.current) {
-                              cancelAnimationFrame(animationFrameRef.current);
-                              animationFrameRef.current = null;
+                               cancelAnimationFrame(animationFrameRef.current);
+                               animationFrameRef.current = null;
                            }
                       };
 
                        const processVideoFrame = () => {
                            if (!isActive || !videoRef.current || video.paused || video.ended || videoError) {
-                                 handlePauseOrEnd();
-                                 return;
+                                handlePauseOrEnd();
+                                return;
                            }
                            if (!canvasRef.current) return;
                            const localCtx = canvasRef.current.getContext('2d'); // Get context within loop if needed
@@ -353,38 +355,38 @@ const FileUpload = () => {
                            animationFrameRef.current = requestAnimationFrame(processVideoFrame);
                        };
 
-                       // --- Event Listener Setup for Video ---
-                       video.removeEventListener('loadedmetadata', handleMetadata); // Clean first
-                       video.removeEventListener('play', handlePlay);
-                       video.removeEventListener('pause', handlePauseOrEnd);
-                       video.removeEventListener('ended', handlePauseOrEnd);
-                       video.removeEventListener('error', handleVideoError);
+                        // --- Event Listener Setup for Video ---
+                        video.removeEventListener('loadedmetadata', handleMetadata); // Clean first
+                        video.removeEventListener('play', handlePlay);
+                        video.removeEventListener('pause', handlePauseOrEnd);
+                        video.removeEventListener('ended', handlePauseOrEnd);
+                        video.removeEventListener('error', handleVideoError);
 
-                       video.addEventListener('loadedmetadata', handleMetadata);
-                       video.addEventListener('play', handlePlay);
-                       video.addEventListener('pause', handlePauseOrEnd);
-                       video.addEventListener('ended', handlePauseOrEnd);
-                       video.addEventListener('error', handleVideoError);
+                        video.addEventListener('loadedmetadata', handleMetadata);
+                        video.addEventListener('play', handlePlay);
+                        video.addEventListener('pause', handlePauseOrEnd);
+                        video.addEventListener('ended', handlePauseOrEnd);
+                        video.addEventListener('error', handleVideoError);
 
-                       if (video.src !== previewURL) {
-                            videoError = false; // Reset error flag for new source
-                            setErrorMessage(''); // Clear previous errors
-                            video.src = previewURL;
-                            video.load();
-                       } else if (video.readyState >= 2 && !videoError) { // If src is same, metadata loaded, and no error
+                        if (video.src !== previewURL) {
+                             videoError = false; // Reset error flag for new source
+                             setErrorMessage(''); // Clear previous errors
+                             video.src = previewURL;
+                             video.load();
+                        } else if (video.readyState >= 2 && !videoError) { // If src is same, metadata loaded, and no error
                            handleMetadata(); // Re-process first frame
-                       } else if (videoError) {
-                            setProcessing(false); // Ensure processing stops if there was a previous video error
-                       }
+                        } else if (videoError) {
+                             setProcessing(false); // Ensure processing stops if there was a previous video error
+                        }
 
                  } else if (isActive) {
                      setProcessing(false);
                  }
              } catch (error) {
-                  if (!isActive) return;
-                  console.error("Error processing media:", error);
-                  setErrorMessage("Failed to process media for preview.");
-                  setProcessing(false);
+                 if (!isActive) return;
+                 console.error("Error processing media:", error);
+                 setErrorMessage("Failed to process media for preview.");
+                 setProcessing(false);
              }
          };
 
@@ -392,12 +394,12 @@ const FileUpload = () => {
         if (powerOn) {
             process();
         } else {
-             const canvas = canvasRef.current;
-              if (canvas) {
-                  const ctx = canvas.getContext('2d');
-                   if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-              }
-             setProcessing(false);
+            const canvas = canvasRef.current;
+             if (canvas) {
+                 const ctx = canvas.getContext('2d');
+                 if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+             }
+            setProcessing(false);
         }
 
         // Cleanup function for useEffect
@@ -444,24 +446,27 @@ const FileUpload = () => {
                 let mimeType = 'image/jpeg';
                 let quality = 0.85;
                 let outputExtension = 'jpg';
-                  if (selectedFile.type === 'image/png') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; }
-                  else if (selectedFile.type === 'image/gif') { mimeType = 'image/gif'; quality = undefined; outputExtension = 'gif'; }
-                  else if (selectedFile.type.startsWith('video/')) { mimeType = 'video/webm'; quality = undefined; outputExtension = 'webm'; }
+                 if (selectedFile.type === 'image/png') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; }
+                 else if (selectedFile.type === 'image/gif') { mimeType = 'image/gif'; quality = undefined; outputExtension = 'gif'; }
+                 else if (selectedFile.type.startsWith('video/')) { mimeType = 'video/webm'; quality = undefined; outputExtension = 'webm'; }
 
                 const processedBlob = await new Promise((resolve, reject) => {
                      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), mimeType, quality);
                 });
                 const nameParts = selectedFile.name.split('.');
                 nameParts.pop();
-                uploadFileName = `${nameParts.join('.')}_vaporwave.${outputExtension}`;
+                uploadFileName = `<span class="math-inline">\{nameParts\.join\('\.'\)\}\_vaporwave\.</span>{outputExtension}`;
                 formData.append('file', processedBlob, uploadFileName);
 
             } else {
                 formData.append('file', selectedFile, uploadFileName);
             }
 
-            const apiUrl = process.env.REACT_APP_API_URL || 'https://permastoreit-server-693312308351.europe-west1.run.app/upload'; // Default URL if not set in .env
-            const response = await axios.post(apiUrl, formData, {
+            // *** Fix Applied Here ***
+            const baseApiUrl = process.env.REACT_APP_API_URL || 'https://thisisit-693312308351.europe-west1.run.app'; // Default URL if not set in .env
+            const uploadUrl = `${baseApiUrl}/upload`; // Construct the full URL
+
+            const response = await axios.post(uploadUrl, formData, { // Use uploadUrl
                 onUploadProgress: (progressEvent) => {
                      if (progressEvent.lengthComputable && progressEvent.total) {
                          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -506,9 +511,9 @@ const FileUpload = () => {
              setUploadStatus('');
              setResultHash('');
         } finally {
-            setIsUploading(false);
-            // Don't reset progress immediately on error, user might want to see it stopped
-            // setUploadProgress(0);
+             setIsUploading(false);
+             // Don't reset progress immediately on error, user might want to see it stopped
+             // setUploadProgress(0);
         }
     };
 
@@ -522,12 +527,12 @@ const FileUpload = () => {
 
         try {
             const canvas = canvasRef.current;
-             let mimeType = 'image/jpeg';
-             let quality = 0.85;
-             let outputExtension = 'jpg';
-              if (selectedFile.type === 'image/png') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; }
-              else if (selectedFile.type === 'image/gif') { mimeType = 'image/gif'; quality = undefined; outputExtension = 'gif'; }
-              else if (selectedFile.type.startsWith('video/')) { mimeType = 'video/webm'; quality = undefined; outputExtension = 'webm'; }
+              let mimeType = 'image/jpeg';
+              let quality = 0.85;
+              let outputExtension = 'jpg';
+               if (selectedFile.type === 'image/png') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; }
+               else if (selectedFile.type === 'image/gif') { mimeType = 'image/gif'; quality = undefined; outputExtension = 'gif'; }
+               else if (selectedFile.type.startsWith('video/')) { mimeType = 'video/webm'; quality = undefined; outputExtension = 'webm'; }
 
             const processedBlob = await new Promise((resolve, reject) => {
                  canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed for download")), mimeType, quality);
@@ -538,18 +543,18 @@ const FileUpload = () => {
             a.href = url;
             const nameParts = selectedFile.name.split('.');
             nameParts.pop();
-            a.download = `${nameParts.join('.')}_vaporwave.${outputExtension}`;
+            a.download = `<span class="math-inline">\{nameParts\.join\('\.'\)\}\_vaporwave\.</span>{outputExtension}`;
             document.body.appendChild(a);
             a.click();
 
             setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                 document.body.removeChild(a);
+                 URL.revokeObjectURL(url);
             }, 100);
 
         } catch (error) {
-            setErrorMessage('Failed to download processed file.');
-            console.error('Download error:', error);
+             setErrorMessage('Failed to download processed file.');
+             console.error('Download error:', error);
         }
     };
 
@@ -578,40 +583,40 @@ const FileUpload = () => {
         return (
             <div className="preview-container">
                  {/* Hidden video source */}
-                {fileType === 'video' && (
-                    <video
-                        ref={videoRef}
-                        style={{ display: 'none' }}
-                        loop
-                        muted
-                        playsInline
-                        preload="auto" // Preload auto might be better
-                        // onLoadedMetadata handled by useEffect
-                        // onPlay/onPause/onEnded handled by useEffect
-                        // onError handled by useEffect
-                    />
-                )}
-                 {/* Visible canvas */}
-                 <div className="canvas-wrapper">
-                     <canvas
-                         ref={canvasRef}
-                         className={`vaporwave-effect ${processing ? 'processing' : ''}`} // Use class for styling processing state
-                         style={{ opacity: powerOn ? 1 : 0.3 }} // Dim when off
+                 {fileType === 'video' && (
+                     <video
+                         ref={videoRef}
+                         style={{ display: 'none' }}
+                         loop
+                         muted
+                         playsInline
+                         preload="auto" // Preload auto might be better
+                         // onLoadedMetadata handled by useEffect
+                         // onPlay/onPause/onEnded handled by useEffect
+                         // onError handled by useEffect
                      />
-                     {/* Conditional overlays */}
-                     {powerOn && <div className="scanlines"></div>}
-                     {processing && <div className="processing-indicator">Ｐｒｏｃｅｓｓｉｎｇ...</div>}
-                 </div>
-                 {/* Power Button */}
-                 {VISUAL_TYPES.includes(selectedFile.type) && (
-                     <div
-                         className={`crt-power-button ${powerOn ? '' : 'off'}`}
-                         onClick={() => setPowerOn(!powerOn)}
-                         title={powerOn ? 'Turn Effects Off' : 'Turn Effects On'}
-                     >
-                          <div className="power-light"></div>
-                     </div>
                  )}
+                  {/* Visible canvas */}
+                  <div className="canvas-wrapper">
+                      <canvas
+                          ref={canvasRef}
+                          className={`vaporwave-effect ${processing ? 'processing' : ''}`} // Use class for styling processing state
+                          style={{ opacity: powerOn ? 1 : 0.3 }} // Dim when off
+                      />
+                      {/* Conditional overlays */}
+                      {powerOn && <div className="scanlines"></div>}
+                      {processing && <div className="processing-indicator">Ｐｒｏｃｅｓｓｉｎｇ...</div>}
+                  </div>
+                  {/* Power Button */}
+                  {VISUAL_TYPES.includes(selectedFile.type) && (
+                      <div
+                          className={`crt-power-button ${powerOn ? '' : 'off'}`}
+                          onClick={() => setPowerOn(!powerOn)}
+                          title={powerOn ? 'Turn Effects Off' : 'Turn Effects On'}
+                      >
+                          <div className="power-light"></div>
+                      </div>
+                  )}
             </div>
         );
     };
@@ -624,18 +629,18 @@ const FileUpload = () => {
 
             <div className="file-input-area">
                  <label className={`file-input-label ${isUploading ? 'disabled' : ''}`}>
-                    <input
-                        type="file"
-                        accept={ALL_ALLOWED_TYPES.join(',')}
-                        onChange={handleFileChange}
-                        disabled={isUploading}
-                    />
-                    <span>{selectedFile ? 'Ｃｈａｎｇｅ Ｆｉｌｅ' : 'Ｓｅｌｅｃｔ Ｆｉｌｅ'}</span>
+                     <input
+                         type="file"
+                         accept={ALL_ALLOWED_TYPES.join(',')}
+                         onChange={handleFileChange}
+                         disabled={isUploading}
+                     />
+                     <span>{selectedFile ? 'Ｃｈａｎｇｅ Ｆｉｌｅ' : 'Ｓｅｌｅｃｔ Ｆｉｌｅ'}</span>
                  </label>
                  {selectedFile && !isUploading && (
-                    <span className="file-info" title={selectedFile.name}>
-                         {truncateText(selectedFile.name, 25)} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
+                     <span className="file-info" title={selectedFile.name}>
+                          {truncateText(selectedFile.name, 25)} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                     </span>
                  )}
                  {/* Progress Bar */}
                  <div className={`upload-progress-container ${isUploading ? 'visible' : ''}`}>
@@ -659,7 +664,7 @@ const FileUpload = () => {
                     onClick={handleUpload}
                     disabled={isUploading || !selectedFile || processing}
                 >
-                     {isUploading ? 'Ｕｐｌｏａｄｉｎｇ...' : 'Ｕｐｌｏａｄ'}
+                    {isUploading ? 'Ｕｐｌｏａｄｉｎｇ...' : 'Ｕｐｌｏａｄ'}
                 </button>
                  {VISUAL_TYPES.includes(selectedFile?.type) && (
                     <button
@@ -674,11 +679,11 @@ const FileUpload = () => {
 
             <div className="message-area">
                  {(uploadStatus || errorMessage) && (
-                     <div className={`status-message ${errorMessage ? 'error' : (resultHash ? 'success' : 'info')}`}>
+                      <div className={`status-message ${errorMessage ? 'error' : (resultHash ? 'success' : 'info')}`}>
                           {/* Display Status or Error */}
                           {/* The uploadStatus state variable now contains the rendered hash when successful */}
                          <p>{errorMessage || uploadStatus || ' '}</p>
-                     </div>
+                      </div>
                  )}
             </div>
 
