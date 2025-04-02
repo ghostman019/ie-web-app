@@ -58,7 +58,7 @@ const FileUpload = () => {
     const truncateText = (text, maxLength = 20) => {
         if (!text) return '';
         if (text.length <= maxLength) return text;
-        return `<span class="math-inline">\{text\.substring\(0, maxLength / 2\)\}\.\.\.</span>{text.substring(text.length - maxLength / 2)}`;
+        return `${text.substring(0, maxLength / 2)}...${text.substring(text.length - maxLength / 2)}`;
     };
 
     const copyToClipboard = (text) => {
@@ -171,11 +171,13 @@ const FileUpload = () => {
         }
     };
 
-    // --- Original applyEffectsToFrame Function ---
+    // --- applyEffectsToFrame Function (with Optimizations) ---
     const applyEffectsToFrame = (ctx, width, height) => {
-        if (!ctx || !width || !height) return; // Guard clause
+        if (!ctx || !width || !height || !powerOn) return; // Guard clause + check powerOn
 
-         // Vaporwave color effects
+        // --- Optimization Point 2 Applied ---
+
+         // Vaporwave color effects (relatively cheap)
          ctx.globalCompositeOperation = 'overlay';
          ctx.fillStyle = 'rgba(255, 0, 255, 0.15)';
          ctx.fillRect(0, 0, width, height);
@@ -184,14 +186,15 @@ const FileUpload = () => {
          ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
          ctx.fillRect(0, 0, width, height);
 
-         // CRT scanlines
+         // CRT scanlines (relatively cheap)
          ctx.globalCompositeOperation = 'source-over';
          for (let y = 0; y < height; y += 2) {
              ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
              ctx.fillRect(0, y, width, 1);
          }
 
-        // Color bleeding effect - wrap in try/catch for potential security/taint issues
+        // Color bleeding effect - COMMENTED OUT for performance (expensive: getImageData/putImageData)
+        /*
          try {
             const imageData = ctx.getImageData(0, 0, width, height);
             const data = imageData.data;
@@ -204,13 +207,15 @@ const FileUpload = () => {
         } catch (e) {
              console.warn("Could not apply color bleed effect (maybe canvas tainted?)", e);
         }
+        */
 
-        // Subtle noise - wrap in try/catch
+        // Subtle noise - wrap in try/catch and reduced frequency
         try {
              const imageData = ctx.getImageData(0, 0, width, height);
              const data = imageData.data;
-             for (let i = 0; i < data.length; i += 16) { // Apply noise less frequently
-                 const noise = Math.random() * 40; // More noise amount
+             // Apply noise less frequently (e.g., every 32nd pixel)
+             for (let i = 0; i < data.length; i += 32) { // Optimization: Increased step from 16 to 32
+                 const noise = Math.random() * 40; // Noise amount
                  if (data[i] !== undefined) data[i] = Math.max(0, Math.min(255, data[i] + noise));
                  if (data[i+1] !== undefined) data[i + 1] = Math.max(0, Math.min(255, data[i+1] + noise));
                  if (data[i+2] !== undefined) data[i + 2] = Math.max(0, Math.min(255, data[i+2] + noise));
@@ -221,7 +226,7 @@ const FileUpload = () => {
          }
 
 
-        // Add watermark
+        // Add watermark (relatively cheap if watermark image is loaded)
         if (watermark) {
             ctx.save(); // Save current state
             const watermarkWidth = width * 0.15;
@@ -232,7 +237,8 @@ const FileUpload = () => {
             ctx.globalAlpha = 0.7;
             ctx.drawImage(watermark, x, y, watermarkWidth, watermarkHeight);
 
-             // Optional: Apply effect to watermark itself - wrap in try/catch
+             // Optional: Applying effects to watermark is also costly - commented out for performance
+             /*
              try {
                  const watermarkData = ctx.getImageData(x, y, Math.ceil(watermarkWidth), Math.ceil(watermarkHeight));
                  const wData = watermarkData.data;
@@ -246,13 +252,14 @@ const FileUpload = () => {
              } catch (e) {
                   console.warn("Could not apply watermark effect.", e);
              }
+             */
             ctx.restore(); // Restore previous drawing state
         }
     };
-    // --- End of Original applyEffectsToFrame Function ---
+    // --- End of applyEffectsToFrame Function ---
 
 
-     // Combined useEffect for processing media
+     // Combined useEffect for processing media (with Optimizations)
     useEffect(() => {
         let isActive = true; // Flag to prevent state updates on unmounted component
         let videoError = false; // Flag specific to video loading error
@@ -263,50 +270,51 @@ const FileUpload = () => {
              setErrorMessage('Failed to load or play video.');
              setProcessing(false);
              videoError = true; // Set flag
+             // Apply effect to the (potentially blank) canvas on error if needed
+             if(canvasRef.current && powerOn) {
+                 const canvas = canvasRef.current;
+                 const ctx = canvas.getContext('2d');
+                 if (ctx) {
+                    applyEffectsToFrame(ctx, canvas.width, canvas.height);
+                 }
+             }
          };
 
         const process = async () => {
-             if (!previewURL || !fileType || !powerOn || !canvasRef.current || !isActive || videoError) {
-                 if (fileType !== 'document' && isActive) setProcessing(false);
+             if (!previewURL || !fileType || !canvasRef.current || !isActive || videoError) {
+                 if (fileType !== 'document' && isActive && powerOn) setProcessing(false); // Only stop processing if effects were on
                  return;
              }
-
-            setProcessing(true);
+            // Set processing only if effects are ON
+             if (powerOn) setProcessing(true);
 
             const canvas = canvasRef.current;
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (!ctx) {
+                console.error("Failed to get 2D context");
+                if (isActive && powerOn) setProcessing(false);
+                return;
+            }
+
 
              try {
-                 if (fileType === 'image') {
+                 if (fileType === 'image' || fileType === 'gif') { // Handle image and gif similarly (first frame)
                      const img = new Image();
                      img.onload = () => {
                          if (!isActive) return;
+                         // Set canvas size before drawing
                          canvas.width = img.naturalWidth;
                          canvas.height = img.naturalHeight;
                          ctx.drawImage(img, 0, 0);
-                         applyEffectsToFrame(ctx, canvas.width, canvas.height);
-                         setProcessing(false);
+                         // Only apply effects if power is on
+                         if (powerOn) {
+                            applyEffectsToFrame(ctx, canvas.width, canvas.height);
+                         }
+                         setProcessing(false); // Stop processing whether effects are on or off
                      };
                      img.onerror = () => {
                           if (!isActive) return;
-                          setErrorMessage("Failed to load image preview.");
-                          setProcessing(false);
-                     }
-                     img.src = previewURL;
-                 }
-                 else if (fileType === 'gif') {
-                     const img = new Image();
-                     img.onload = () => {
-                         if (!isActive) return;
-                         canvas.width = img.naturalWidth;
-                         canvas.height = img.naturalHeight;
-                         ctx.drawImage(img, 0, 0); // Draw first frame
-                         applyEffectsToFrame(ctx, canvas.width, canvas.height);
-                         setProcessing(false); // Stop processing
-                     };
-                      img.onerror = () => {
-                          if (!isActive) return;
-                          setErrorMessage("Failed to load GIF preview.");
+                          setErrorMessage(`Failed to load ${fileType} preview.`);
                           setProcessing(false);
                      }
                      img.src = previewURL;
@@ -314,48 +322,72 @@ const FileUpload = () => {
                  else if (fileType === 'video' && videoRef.current) {
                      const video = videoRef.current;
 
+                      // --- Optimization Point 1 Applied ---
+                      // This function now only draws the current frame, no effects here
+                      const drawVideoFrame = () => {
+                           if (!isActive || !videoRef.current || video.paused || video.ended || videoError || !canvasRef.current) {
+                                return; // Don't continue loop if stopped/error/unmounted
+                           }
+                           const localCtx = canvasRef.current.getContext('2d');
+                           if (!localCtx) return;
+
+                           localCtx.drawImage(video, 0, 0, canvas.width, canvas.height); // Just draw
+                           animationFrameRef.current = requestAnimationFrame(drawVideoFrame); // Continue loop
+                       };
+
+
+                      // This handler applies effects to the CURRENT canvas content
+                      const applyEffectToCurrentFrame = () => {
+                          if (!isActive || !canvasRef.current || videoError || !powerOn) return;
+                          const localCtx = canvasRef.current.getContext('2d');
+                           if (!localCtx) return;
+                           // Apply effect to whatever is currently drawn on canvas
+                          applyEffectsToFrame(localCtx, canvas.width, canvas.height);
+                          setProcessing(false); // Effects applied, stop processing indicator
+                      }
+
                       const handleMetadata = () => {
                           if (!isActive || videoError) return;
-                          canvas.width = video.videoWidth;
-                          canvas.height = video.videoHeight;
-                          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                          applyEffectsToFrame(ctx, canvas.width, canvas.height);
-                          setProcessing(false);
-                          if (!video.paused) { // Start animation only if playing
-                              animationFrameRef.current = requestAnimationFrame(processVideoFrame);
-                          }
+                          // Set canvas size
+                           canvas.width = video.videoWidth;
+                           canvas.height = video.videoHeight;
+                           // Draw the very first frame
+                           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                           // Apply effects to this first frame if power is on
+                           if (powerOn) {
+                               applyEffectToCurrentFrame(); // Apply effect, also sets processing to false
+                           } else {
+                               setProcessing(false); // No effects, stop processing indicator
+                           }
                       };
 
                       const handlePlay = () => {
                           if (!isActive || videoError) return;
-                           setProcessing(true);
-                           animationFrameRef.current = requestAnimationFrame(processVideoFrame);
+                           // Set processing true only if effects are on (to show indicator while drawing)
+                           // Note: Effects themselves are NOT applied during playback now.
+                           if (powerOn) setProcessing(true);
+                           // Start drawing frames without effects
+                           animationFrameRef.current = requestAnimationFrame(drawVideoFrame);
                       };
 
                       const handlePauseOrEnd = () => {
                            if (!isActive) return;
-                           setProcessing(false);
+                           // Stop the drawing loop
                            if (animationFrameRef.current) {
                                cancelAnimationFrame(animationFrameRef.current);
                                animationFrameRef.current = null;
                            }
+                           // Apply effects to the frame that is currently displayed on the canvas
+                           if (powerOn && !videoError) {
+                               applyEffectToCurrentFrame(); // Apply effect, also sets processing to false
+                           } else {
+                               setProcessing(false); // No effects needed, ensure processing is off
+                           }
                       };
 
-                       const processVideoFrame = () => {
-                           if (!isActive || !videoRef.current || video.paused || video.ended || videoError) {
-                                handlePauseOrEnd();
-                                return;
-                           }
-                           if (!canvasRef.current) return;
-                           const localCtx = canvasRef.current.getContext('2d'); // Get context within loop if needed
-                           if (!localCtx) return;
-
-                           localCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                           applyEffectsToFrame(localCtx, canvas.width, canvas.height);
-                           animationFrameRef.current = requestAnimationFrame(processVideoFrame);
-                       };
 
                         // --- Event Listener Setup for Video ---
+                        // Use stable references if possible, or define handlers outside useEffect
                         video.removeEventListener('loadedmetadata', handleMetadata); // Clean first
                         video.removeEventListener('play', handlePlay);
                         video.removeEventListener('pause', handlePauseOrEnd);
@@ -371,15 +403,20 @@ const FileUpload = () => {
                         if (video.src !== previewURL) {
                              videoError = false; // Reset error flag for new source
                              setErrorMessage(''); // Clear previous errors
+                             // Set processing true only if effects are ON, as metadata load will turn it off
+                              if (powerOn) setProcessing(true);
                              video.src = previewURL;
                              video.load();
                         } else if (video.readyState >= 2 && !videoError) { // If src is same, metadata loaded, and no error
-                           handleMetadata(); // Re-process first frame
+                           // Re-draw first frame and apply effects if power is on
+                           handleMetadata();
                         } else if (videoError) {
-                             setProcessing(false); // Ensure processing stops if there was a previous video error
+                           // If there was a video error loading this src, ensure processing is off
+                            setProcessing(false);
                         }
 
                  } else if (isActive) {
+                    // Catch all for non-visual or other cases where processing should stop
                      setProcessing(false);
                  }
              } catch (error) {
@@ -390,16 +427,37 @@ const FileUpload = () => {
              }
          };
 
-        // Run processing logic
+        // Run processing logic only if power is on
         if (powerOn) {
             process();
         } else {
-            const canvas = canvasRef.current;
+             // Power is off: Clear canvas and stop processing indicator
+             const canvas = canvasRef.current;
              if (canvas) {
                  const ctx = canvas.getContext('2d');
-                 if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+                 // If it's an image/gif, draw the original without effects
+                 if (previewURL && (fileType === 'image' || fileType === 'gif')) {
+                     const img = new Image();
+                     img.onload = () => {
+                        if (!isActive) return;
+                        canvas.width = img.naturalWidth;
+                        canvas.height = img.naturalHeight;
+                         if(ctx) ctx.drawImage(img, 0, 0);
+                     };
+                     img.src = previewURL;
+                 }
+                 // If it's a video, draw the current frame without effects
+                 else if (previewURL && fileType === 'video' && videoRef.current && videoRef.current.readyState >= 2) {
+                     canvas.width = videoRef.current.videoWidth;
+                     canvas.height = videoRef.current.videoHeight;
+                     if(ctx) ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                 }
+                 // Otherwise clear it
+                 else if (ctx) {
+                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                 }
              }
-            setProcessing(false);
+             setProcessing(false);
         }
 
         // Cleanup function for useEffect
@@ -409,20 +467,23 @@ const FileUpload = () => {
                 cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
              }
+             // Simplified video cleanup - remove listeners and reset src
              const video = videoRef.current;
              if (video) {
-                 // Remove listeners using the same handler references used in addEventListener
-                 // Note: If handlers were defined inline, they couldn't be removed this way.
-                 // This assumes handleMetadata, handlePlay, etc., are stable references (defined outside or useCallback).
-                 // Since they aren't in this structure, removal might not work perfectly without refactoring handlers.
-                 // A simpler cleanup might just pause and reset src.
+                 // Define dummy handlers for removal - less ideal but necessary if handlers aren't stable
+                 const dummy = ()=>{};
+                 video.removeEventListener('loadedmetadata', dummy);
+                 video.removeEventListener('play', dummy);
+                 video.removeEventListener('pause', dummy);
+                 video.removeEventListener('ended', dummy);
+                 video.removeEventListener('error', dummy);
                  if (!video.paused) video.pause();
-                 video.removeAttribute('src'); // Try removing attribute
-                 video.load(); // Attempt to reset
+                 video.removeAttribute('src');
+                 video.load();
              }
          };
 
-    }, [previewURL, fileType, powerOn, watermark]); // Dependencies
+    }, [previewURL, fileType, powerOn, watermark]); // Dependencies include powerOn now
 
 
     const handleUpload = async () => {
@@ -441,28 +502,35 @@ const FileUpload = () => {
             const formData = new FormData();
             let uploadFileName = selectedFile.name;
 
+            // **Upload processed frame if effects are ON for visual types**
             if (VISUAL_TYPES.includes(selectedFile.type) && powerOn && canvasRef.current) {
                 const canvas = canvasRef.current;
+                // Determine mimeType based on ORIGINAL file, default to jpeg for processed
                 let mimeType = 'image/jpeg';
                 let quality = 0.85;
                 let outputExtension = 'jpg';
+                 // Keep original extension/type if possible and reasonable (PNG ok, GIF might lose animation)
                  if (selectedFile.type === 'image/png') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; }
-                 else if (selectedFile.type === 'image/gif') { mimeType = 'image/gif'; quality = undefined; outputExtension = 'gif'; }
-                 else if (selectedFile.type.startsWith('video/')) { mimeType = 'video/webm'; quality = undefined; outputExtension = 'webm'; }
+                 // Avoid uploading processed GIF as gif, as animation is lost. Upload as png/jpg? Or original?
+                 // else if (selectedFile.type === 'image/gif') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; } // Example: save processed GIF frame as PNG
+                 // Avoid uploading processed video frame as video. Upload as jpg? Or original?
+                 // else if (selectedFile.type.startsWith('video/')) { mimeType = 'image/jpeg'; quality = 0.85; outputExtension = 'jpg'; } // Example: save processed video frame as JPG
 
                 const processedBlob = await new Promise((resolve, reject) => {
                      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), mimeType, quality);
                 });
                 const nameParts = selectedFile.name.split('.');
                 nameParts.pop();
-                uploadFileName = `<span class="math-inline">\{nameParts\.join\('\.'\)\}\_vaporwave\.</span>{outputExtension}`;
+                // Adjust filename to reflect processing only if effects were on
+                 uploadFileName = `${nameParts.join('.')}_${powerOn ? 'vaporwave' : 'original'}.${outputExtension}`;
                 formData.append('file', processedBlob, uploadFileName);
 
             } else {
+                // Upload original file if effects are off or it's not a visual type
                 formData.append('file', selectedFile, uploadFileName);
             }
 
-            // *** Fix Applied Here ***
+            // --- URL Construction from previous fix ---
             const baseApiUrl = process.env.REACT_APP_API_URL || 'https://thisisit-693312308351.europe-west1.run.app'; // Default URL if not set in .env
             const uploadUrl = `${baseApiUrl}/upload`; // Construct the full URL
 
@@ -478,6 +546,8 @@ const FileUpload = () => {
                  },
                 timeout: 300000
             });
+            // --- End URL Construction ---
+
 
             setUploadProgress(100);
             if (response.data && response.data.hash) {
@@ -519,6 +589,7 @@ const FileUpload = () => {
 
 
     const handleDownload = async () => {
+         // Allow download only if visual type and effects are ON (as it downloads from canvas)
          if (!selectedFile || !VISUAL_TYPES.includes(selectedFile.type) || !powerOn || !canvasRef.current) {
              setErrorMessage("Cannot download: No processed visual file available or effects are off.");
              return;
@@ -527,12 +598,15 @@ const FileUpload = () => {
 
         try {
             const canvas = canvasRef.current;
+              // Determine mimeType for download based on original file type
               let mimeType = 'image/jpeg';
               let quality = 0.85;
               let outputExtension = 'jpg';
                if (selectedFile.type === 'image/png') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; }
-               else if (selectedFile.type === 'image/gif') { mimeType = 'image/gif'; quality = undefined; outputExtension = 'gif'; }
-               else if (selectedFile.type.startsWith('video/')) { mimeType = 'video/webm'; quality = undefined; outputExtension = 'webm'; }
+               // Downloading processed GIF frame - save as png?
+               else if (selectedFile.type === 'image/gif') { mimeType = 'image/png'; quality = undefined; outputExtension = 'png'; }
+               // Downloading processed video frame - save as jpg?
+               else if (selectedFile.type.startsWith('video/')) { mimeType = 'image/jpeg'; quality = 0.85; outputExtension = 'jpg'; }
 
             const processedBlob = await new Promise((resolve, reject) => {
                  canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed for download")), mimeType, quality);
@@ -543,7 +617,8 @@ const FileUpload = () => {
             a.href = url;
             const nameParts = selectedFile.name.split('.');
             nameParts.pop();
-            a.download = `<span class="math-inline">\{nameParts\.join\('\.'\)\}\_vaporwave\.</span>{outputExtension}`;
+            // Filename indicates it's processed
+            a.download = `${nameParts.join('.')}_vaporwave.${outputExtension}`;
             document.body.appendChild(a);
             a.click();
 
@@ -591,21 +666,19 @@ const FileUpload = () => {
                          muted
                          playsInline
                          preload="auto" // Preload auto might be better
-                         // onLoadedMetadata handled by useEffect
-                         // onPlay/onPause/onEnded handled by useEffect
-                         // onError handled by useEffect
+                         // Event listeners are attached in useEffect
                      />
                  )}
                   {/* Visible canvas */}
                   <div className="canvas-wrapper">
                       <canvas
                           ref={canvasRef}
-                          className={`vaporwave-effect ${processing ? 'processing' : ''}`} // Use class for styling processing state
-                          style={{ opacity: powerOn ? 1 : 0.3 }} // Dim when off
+                          className={`vaporwave-effect ${processing && powerOn ? 'processing' : ''}`} // Show processing only if power is on
+                          style={{ opacity: powerOn ? 1 : 0.8 }} // Slightly dim when off, but still show base image/video frame
                       />
-                      {/* Conditional overlays */}
+                      {/* Conditional overlays - Scanlines only shown if power is on */}
                       {powerOn && <div className="scanlines"></div>}
-                      {processing && <div className="processing-indicator">Ｐｒｏｃｅｓｓｉｎｇ...</div>}
+                      {processing && powerOn && <div className="processing-indicator">Ｐｒｏｃｅｓｓｉｎｇ...</div>}
                   </div>
                   {/* Power Button */}
                   {VISUAL_TYPES.includes(selectedFile.type) && (
@@ -662,15 +735,16 @@ const FileUpload = () => {
                 <button
                     className="action-button upload-button"
                     onClick={handleUpload}
-                    disabled={isUploading || !selectedFile || processing}
+                    disabled={isUploading || !selectedFile || (processing && powerOn)} // Disable if processing effects
                 >
                     {isUploading ? 'Ｕｐｌｏａｄｉｎｇ...' : 'Ｕｐｌｏａｄ'}
                 </button>
+                 {/* Only allow download if visual type and effects are ON */}
                  {VISUAL_TYPES.includes(selectedFile?.type) && (
                     <button
                         className="action-button download-button"
                         onClick={handleDownload}
-                        disabled={isUploading || !selectedFile || processing || !powerOn}
+                        disabled={isUploading || !selectedFile || (processing && powerOn) || !powerOn}
                     >
                         Ｄｏｗｎｌｏａｄ░Ａｒｔ
                     </button>
@@ -688,8 +762,8 @@ const FileUpload = () => {
             </div>
 
              <footer className="app-footer">
-                 <p>Formats: JPG, PNG, GIF, PDF, TXT</p> {/* Simplified list */}
-                 <p>Max Size: 100MB | Effects: Images/Videos</p>
+                 <p>Formats: JPG, PNG, GIF, PDF, TXT, JSON</p> {/* Added JSON back for clarity */}
+                 <p>Max Size: 100MB | Effects: Images/Videos (Toggle w/ Power)</p>
              </footer>
         </div>
     );
