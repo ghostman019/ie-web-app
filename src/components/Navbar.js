@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Navbar.css';
-import ieLogo from '../assets/watermark.png'; // Make sure this path is correct
+import ieLogo from '../assets/IElogo.jpg'; // Make sure this path is correct
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);

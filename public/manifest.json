@@ -8,13 +8,13 @@
       "type": "image/x-icon"
     },
     {
-      "src": "internet-exp-logo.png",
-      "type": "image/png",
+      "src": "IElogo.jpg",
+      "type": "image/jpg",
       "sizes": "192x192"
     },
     {
-      "src": "internet-exp-logo.png",
-      "type": "image/png",
+      "src": "IElogo.jpg",
+      "type": "image/jpg",
       "sizes": "512x512"
     }
   ],

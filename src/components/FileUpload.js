@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/FileUpload.css'; // Assuming you have this CSS file
-import watermarkImage from '../assets/watermark.png'; // Assuming you have this image
+import watermarkImage from '../assets/IElogo.jpg'; // Assuming you have this image
 
 const FileUpload = () => {
     const [selectedFile, setSelectedFile] = useState(null);
