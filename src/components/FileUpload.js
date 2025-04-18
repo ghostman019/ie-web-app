@@ -68,7 +68,7 @@ const FileUpload = () => {
                  // Only revert if the hash hasn't changed (prevent overwriting newer status)
                  if (resultHash === text) {
                      // Re-render the status with the clickable hash
-                     setUploadStatus(<>✅ Upload successful! Hash: {renderHash(text)}</>);
+                     setUploadStatus(<>✅ Upload successful!Unveiled on 20th May Hash: {renderHash(text)}</>);
                  }
              }, 2000);
         }).catch(err => {
@@ -77,7 +77,7 @@ const FileUpload = () => {
               setTimeout(() => {
                  if (resultHash === text) {
                      // Re-render the status with the clickable hash
-                     setUploadStatus(<>✅ Upload successful! Hash: {renderHash(text)}</>);
+                     setUploadStatus(<>✅ Upload successful!Unveiled on 20th May Hash: {renderHash(text)}</>);
                  }
               }, 2000);
         });
@@ -87,7 +87,7 @@ const FileUpload = () => {
     useEffect(() => {
       if (resultHash) {
            // Use a temporary variable to hold the JSX, otherwise React might complain about complex state
-           const statusContent = <>✅ Upload successful! Hash: {renderHash(resultHash)}</>;
+           const statusContent = <>✅ Upload successful!Unveiled on 20th May Hash: {renderHash(resultHash)}</>;
            setUploadStatus(statusContent);
       } else if (!isUploading && !errorMessage) { // Clear status if no hash, not uploading, and no error
            setUploadStatus('');
