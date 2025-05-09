@@ -697,7 +697,7 @@ const FileUpload = () => {
     return (
         <div className="file-upload">
             <header className="app-header">
-                <h1>Just PermastoreIt Bro</h1>
+                <h1>Just $IE It Bro</h1>
             </header>
 
             <div className="file-input-area">
