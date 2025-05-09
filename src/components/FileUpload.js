@@ -68,7 +68,7 @@ const FileUpload = () => {
                  // Only revert if the hash hasn't changed (prevent overwriting newer status)
                  if (resultHash === text) {
                      // Re-render the status with the clickable hash
-                     setUploadStatus(<>✅ Upload successful!Unveiled on 20th May Hash: {renderHash(text)}</>);
+                     setUploadStatus(<>✅ Upload successful! Hash: {renderHash(text)}</>);
                  }
              }, 2000);
         }).catch(err => {
