@@ -13,8 +13,8 @@ export default function Home() {
   return (
     <WalletContextProvider>
       <div className="home-container padding-container min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col justify-center items-center p-4">
-        <h1 className="text-5xl font-extrabold text-center">Sshh🤫</h1>
-        <p className="mt-4 text-lg text-center">The $IE team is bringing you a suprise on the 20th of May.</p>
+        <h1 className="text-5xl font-extrabold text-center">$IE token</h1>
+        <p className="mt-4 text-lg text-center">Nostalgia forever</p>
         <div className="w-full flex justify-center">
           <MediaPlayer videoSrc="/assets/music.mp4" /> {/* Ensure the video path is correct */}
         </div>
@@ -31,7 +31,7 @@ export default function Home() {
           <a href="https://discord.gg/2UsvMaKRAD" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-400">
             <FontAwesomeIcon icon={faDiscord} size="lg" />
           </a>
-          <a href="https://t.me/IECommunityowned" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-400">
+          <a href="https://t.me/community_IE" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-400">
             <FontAwesomeIcon icon={faTelegram} size="lg" />
           </a>
           <a href="https://dexscreener.com/solana/HU9TSBH3HsY1GFAtCNsAX2B5jCvt7D8WFR29ioL54rgn" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-400">
