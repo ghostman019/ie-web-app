@@ -27,7 +27,7 @@ export default function Navbar() {
           <div className="nav-links">
             <NavLink to="/" text="Home" setMenuOpen={setMenuOpen} />
             <NavLink to="/games" text="Games" setMenuOpen={setMenuOpen} />
-            <NavLink to="/internet15" text="Building.." setMenuOpen={setMenuOpen} />
+            <NavLink to="/internet15" text="$IE Filter" setMenuOpen={setMenuOpen} />
           </div>
 
           <div className="token-action">
