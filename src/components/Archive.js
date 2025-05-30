@@ -48,27 +48,6 @@ const Archive = () => {
     result.node.tags.some((tag) => tag.value.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  return (
-    <div className="archive p-4 bg-gray-800 rounded-lg shadow-lg text-white">
-      <h2 className="text-2xl font-semibold mb-2">Search Archived Content</h2>
-      <input
-        type="text"
-        placeholder="Search..."
-        value={searchQuery}
-        onChange={handleSearch}
-        className="mb-4 block w-full text-black p-2 rounded"
-      />
-      <ul>
-        {filteredResults.map((result) => (
-          <li key={result.node.id} className="mb-2">
-            <a href={`https://arweave.net/${result.node.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-500">
-              {result.node.id}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 };
 
 export default Archive;
