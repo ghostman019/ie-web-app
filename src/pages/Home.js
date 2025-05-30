@@ -13,8 +13,8 @@ export default function Home() {
   return (
     <WalletContextProvider>
       <div className="home-container padding-container min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col justify-center items-center p-4">
-        <h1 className="text-5xl font-extrabold text-center">$IE Token</h1>
-        <p className="mt-4 text-lg text-center">Nostalgia Forever</p>
+              <h1 className="text-5xl font-extrabold text-center">$IE meme coin</h1>
+        <p className="mt-4 text-lg text-center">The retro crash king is back and stronger than ever. Pick up the vibes and join the movement!🦾🌐</p>
         <div className="w-full flex justify-center">
           <MediaPlayer videoSrc="/assets/music.mp4" /> {/* Ensure the video path is correct */}
         </div>
