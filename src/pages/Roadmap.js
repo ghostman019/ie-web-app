@@ -4,26 +4,26 @@ import '../styles/globals.css'; // Ensure this import is present
 const roadmapData = [
   {
     phase: "Q1 2025",
-    title: "Foundation & Community Building",
-    description: "Build a 1000+ member community and launch 2 games to foster engagement. Finalize the technical architecture for Internet 1.5 and begin onboarding developers. Focus on grassroots marketing and community-driven growth.",
+    title: "Foundation & Launch",
+    description: "Launch IE Token animated icon and banner. Create social channels ,Telegram and X.",
     completed: false,
   },
   {
     phase: "Q2 2025",
-    title: "Token Expansion & Ecosystem Growth",
-    description: "List on Tier 3/4 exchanges. Release the Internet 1.5 testnet with the On-Chain Index Layer and basic Decentralized Storage Layer. Introduce limited-edition NFTs tied to games and host weekly AMAs to engage the community.",
+    title: "Community Building",
+    description: "Daily raids and engagement tasks. Launch top-holder leaderboard.",
     completed: false,
   },
   {
     phase: "Q3 2025",
-    title: "Scaling & Awareness",
-    description: "Launch the Internet 1.5 mainnet beta with all three layers (Index, Storage, and Replication). Enable $IE tokens for storage payments and introduce governance voting. Partner with crypto influencers and interested projects to expand the ecosystem. Run monthly community challenges and marketing campaigns.",
+    title: "Product Rollout",
+    description: "Launch Wallet Explorer tool. Build IE Utility Dashboard. NFT Drop for top holders. Service Marketplace beta",
     completed: false,
   },
   {
     phase: "Q4 2025",
-    title: "Mainnet Launch & Ecosystem Growth",
-    description: "Officially launch the Internet 1.5 mainnet with AI-driven redundancy and self-healing replication. Partner with 3-5 dApps for storage integration. List $IE on Tier 2 CEXs (e.g., Gate.io, KuCoin) and enable cross-chain bridging to Ethereum and Polygon. Focus on enterprise partnerships and long-term sustainability.",
+    title: "Ecosystem Expansion",
+    description: "Introduce community forums. Build Staking and Reward tools. Launch Service Marketplace fully. Cross-platform Integrations.",
     completed: false,
   },
 ];

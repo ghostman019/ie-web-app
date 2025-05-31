@@ -12,7 +12,7 @@ const WhitePaper = () => {
   useEffect(() => {
     const fetchWhitePaper = async () => {
       try {
-        const response = await fetch('https://raw.githubusercontent.com/MichaelMireku/INTERNET1.5/main/docs/Whitepaper.md');
+        const response = await fetch('https://raw.githubusercontent.com/MichaelMireku/research-papers/main/README.md');
         const text = await response.text();
         setContent(text);
         setLoading(false);
@@ -27,7 +27,7 @@ const WhitePaper = () => {
 
   return (
     <div className="white-paper-container p-8 bg-gray-900 text-white min-h-screen">
-      <h1 className="text-4xl font-bold text-center mb-8">Internet 1.5 White Paper</h1>
+      <h1 className="text-4xl font-bold text-center mb-8">$IE White Paper</h1>
       {loading ? (
         <p className="text-center text-lg">Loading...</p>
       ) : (
