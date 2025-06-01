@@ -28,7 +28,7 @@ export default function Navbar() {
             <NavLink to="/" text="Home" setMenuOpen={setMenuOpen} />
             <NavLink to="/games" text="Games" setMenuOpen={setMenuOpen} />
             <NavLink to="/internet15" text="$IE Filter" setMenuOpen={setMenuOpen} />
-            <NavLink to="/leaderboard" text="Leaderboard" setMenuOpen={setMenuOpen} />
+            <NavLink to="/leaderboard" text="Leaderboards" setMenuOpen={setMenuOpen} />
             <NavLink to="/roadmap" text="Roadmap" setMenuOpen={setMenuOpen} />
             <NavLink to="/whitepaper" text="WhitePaper" setMenuOpen={setMenuOpen} />
           </div>
