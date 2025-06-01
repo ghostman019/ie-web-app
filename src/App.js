@@ -9,7 +9,8 @@ import WalletInfoPage from './pages/WalletInfoPage';
 import Whitepaper from './pages/Whitepaper';
 import Roadmap from './pages/Roadmap';
 import Internet15 from './pages/Internet15';
-import LeaderboardPage from './pages/LeaderboardPage'; // Assuming you added this
+import LeaderboardPage from './pages/LeaderboardPage'; 
+import TeamAnalyticsPage from './pages/TeamAnalyticsPage';
 import './styles/globals.css';
 
 // import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'; // No longer needed for endpoint
@@ -55,6 +56,7 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/games" element={<Games />} />
                   <Route path="/wallet-info-page" element={<WalletInfoPage />} />
+                  <Route path="/team-analytics" element={<TeamAnalyticsPage />} />
                   <Route path="/whitepaper" element={<Whitepaper />} />
                   <Route path="/roadmap" element={<Roadmap />} />
                   <Route path="/internet15" element={<Internet15 />} />
