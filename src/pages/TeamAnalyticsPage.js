@@ -3,10 +3,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { AccountLayout, MintLayout, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-// import '../styles/globals.css'; // Ensure App-level import
 
 const IE_MINT_ADDRESS = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA';
-// ---- IMPORTANT: REPLACE WITH ACTUAL TEAM WALLET PUBLIC KEYS ----
+
 const TEAM_WALLET_ADDRESSES = [
   "CficDw4M9HqNnorEyUXma8pYK6585CRb5SNJ3jqiyUW",
   "J9AjnjE63M9YvwyfuRByzVFkNDSuvKoCBaf3goZNuR92",
@@ -16,11 +15,15 @@ const TEAM_WALLET_ADDRESSES = [
   "HmqgsN2gEpj431UU5AJVp8vZ3849M5Xqz48pz723uV66",
   "BmByXNe6S697h7iFtfzpEse74RDNumvzToNWo15hvBhf",
   "5CJrGxtDBEBFYERBSrrDBy8Rrtv2R7urykBLPii9cxxL",
-  // Add more wallet public key strings here
 ];
-// ---------------------------------------------------------------
-// Link to an official declaration of team wallets, if available.
-const OFFICIAL_TEAM_WALLET_DECLARATION_LINK = "YOUR_LINK_TO_OFFICIAL_DECLARATION_HERE"; // e.g., link to a blog post, tweet, or whitepaper section
+
+const MARKETING_OPERATIONAL_WALLET_ADDRESSES = [
+  "ReplaceWithMarketingWalletAddress1", // ** YOU MUST REPLACE THIS **
+  // Add more marketing or operational wallet addresses here
+];
+
+const OFFICIAL_TEAM_WALLET_DECLARATION_LINK = "YOUR_LINK_TO_OFFICIAL_DECLARATION_HERE";
+const BUBBLEMAP_URL = `https://app.bubblemaps.io/sol/token/${IE_MINT_ADDRESS}`; // URL for your token on Bubblemaps.io
 
 const shortenAddress = (address) => {
   if (!address) return '';
@@ -29,111 +32,226 @@ const shortenAddress = (address) => {
 
 const TeamAnalyticsPage = () => {
   const { connection } = useConnection();
-  const [teamAnalytics, setTeamAnalytics] = useState([]);
-  const [totalTeamBalance, setTotalTeamBalance] = useState(0);
+  const [analyticsData, setAnalyticsData] = useState([]);
+  const [summary, setSummary] = useState({
+    totalBalanceTeam: 0, percentageTeam: 0,
+    totalBalanceMarketingOps: 0, percentageMarketingOps: 0,
+    totalBalanceCombined: 0, percentageCombined: 0,
+    totalSupply: 0,
+  });
   const [tokenDecimals, setTokenDecimals] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [loadingMessage, setLoadingMessage] = useState('Loading team analytics...');
+  const [loadingMessage, setLoadingMessage] = useState('Loading analytics...');
+  const [isBubblemapAvailable, setIsBubblemapAvailable] = useState(null); // null, true, or false
 
-  const fetchTeamAnalytics = useCallback(async () => {
-    // ... (fetch logic remains the same as previously provided)
+  // Check Bubblemaps.io availability
+  useEffect(() => {
+    const checkMapAvailability = async () => {
+      try {
+        // Note: Direct client-side fetch might be blocked by CORS on api-legacy.bubblemaps.io.
+        // If so, this check might need to be done via a backend or simply assumed true/omitted.
+        // For now, we'll optimistically assume it might work or can be handled.
+        const response = await fetch(`https://api-legacy.bubblemaps.io/map-availability?chain=sol&token=${IE_MINT_ADDRESS}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === "OK" && data.availability === true) {
+            setIsBubblemapAvailable(true);
+          } else {
+            setIsBubblemapAvailable(false);
+            console.warn("Bubblemaps.io availability check KO or map not available:", data.message || "Map not ready");
+          }
+        } else {
+          setIsBubblemapAvailable(false);
+          console.warn("Bubblemaps.io availability check failed, status:", response.status);
+        }
+      } catch (e) {
+        setIsBubblemapAvailable(false); // Assume not available on error (e.g. CORS)
+        console.error("Error checking Bubblemaps.io availability (possibly CORS):", e);
+      }
+    };
+    checkMapAvailability();
+  }, []);
+
+
+  const fetchAnalytics = useCallback(async () => {
+    // ... (fetchAnalytics logic remains the same as the previous full code version)
     if (!connection) {
       setError("Wallet not connected or connection not available.");
       return;
     }
-    if (TEAM_WALLET_ADDRESSES.length === 0 || TEAM_WALLET_ADDRESSES[0] === "ReplaceWithTeamWalletPubKey1") {
-        setError("Please update TEAM_WALLET_ADDRESSES in the code with actual wallet public keys.");
+
+    const allConfiguredWallets = [
+      ...TEAM_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Team" })),
+      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing/Operational" }))
+    ].filter(w => w.address && !w.address.startsWith("ReplaceWith"));
+
+    if (allConfiguredWallets.length === 0) {
+        setError("No valid team or operational wallet addresses are configured. Please update placeholder addresses.");
         setIsLoading(false);
-        setTeamAnalytics([]);
-        setTotalTeamBalance(0);
+        // Reset summary correctly
+        setSummary(s => ({ ...s, totalBalanceTeam: 0, percentageTeam: 0, totalBalanceMarketingOps: 0, percentageMarketingOps: 0, totalBalanceCombined: 0, percentageCombined: 0 }));
+        setAnalyticsData([]);
         return;
     }
 
     setIsLoading(true);
     setError(null);
-    setTeamAnalytics([]);
-    setTotalTeamBalance(0);
-    setLoadingMessage('Fetching token decimals and wallet balances...');
+    setAnalyticsData([]);
+    setLoadingMessage('Fetching token and wallet data...');
 
     try {
       let currentDecimals = tokenDecimals;
-      if (currentDecimals === null) {
+      let currentTotalSupply = summary.totalSupply;
+
+      if (currentDecimals === null || currentTotalSupply === 0) {
         setLoadingMessage('Fetching token mint information...');
         const mintPublicKey = new PublicKey(IE_MINT_ADDRESS);
         const mintInfo = await connection.getAccountInfo(mintPublicKey);
-        if (!mintInfo) throw new Error(`Failed to fetch mint info for ${IE_MINT_ADDRESS}. Ensure it's a valid mint address.`);
+        if (!mintInfo) throw new Error(`Failed to fetch mint info for ${IE_MINT_ADDRESS}.`);
         const mintData = MintLayout.decode(mintInfo.data);
         currentDecimals = mintData.decimals;
         setTokenDecimals(currentDecimals);
+        currentTotalSupply = Number(BigInt(mintData.supply.toString())) / Math.pow(10, currentDecimals);
       }
 
-      let calculatedTotalBalance = 0;
-      const analyticsData = [];
+      let calculatedTotalTeam = 0;
+      let calculatedTotalMarketingOps = 0;
+      const fetchedAnalytics = [];
       let walletsProcessed = 0;
 
-      for (const address of TEAM_WALLET_ADDRESSES) {
+      for (const walletConfig of allConfiguredWallets) {
         walletsProcessed++;
-        setLoadingMessage(`Processing wallet ${walletsProcessed}/${TEAM_WALLET_ADDRESSES.length}: ${shortenAddress(address)}...`);
+        setLoadingMessage(`Processing wallet ${walletsProcessed}/${allConfiguredWallets.length}: ${shortenAddress(walletConfig.address)}...`);
         try {
-          const ownerPublicKey = new PublicKey(address);
+          const ownerPublicKey = new PublicKey(walletConfig.address);
           const tokenAccounts = await connection.getTokenAccountsByOwner(ownerPublicKey, { programId: TOKEN_PROGRAM_ID });
-
           let ieBalanceForWallet = 0;
           for (const acc of tokenAccounts.value) {
             const accountData = AccountLayout.decode(acc.account.data);
             if (accountData.mint.toBase58() === IE_MINT_ADDRESS) {
-              const rawAmount = BigInt(accountData.amount.toString());
-              ieBalanceForWallet += Number(rawAmount) / Math.pow(10, currentDecimals);
+              ieBalanceForWallet += Number(BigInt(accountData.amount.toString())) / Math.pow(10, currentDecimals);
             }
           }
-          analyticsData.push({ address: address, balance: ieBalanceForWallet });
-          calculatedTotalBalance += ieBalanceForWallet;
-        } catch (walletError) {
-          console.warn(`Could not process wallet ${address}: ${walletError.message}`);
-          analyticsData.push({ address: address, balance: 0, error: 'Could not fetch balance' });
+          fetchedAnalytics.push({ ...walletConfig, balance: ieBalanceForWallet });
+          if (walletConfig.category === "Team") {
+            calculatedTotalTeam += ieBalanceForWallet;
+          } else if (walletConfig.category === "Marketing/Operational") {
+            calculatedTotalMarketingOps += ieBalanceForWallet;
+          }
+        } catch (walletErr) {
+          console.warn(`Could not process wallet ${walletConfig.address}: ${walletErr.message}`);
+          fetchedAnalytics.push({ ...walletConfig, balance: 0, error: 'Could not fetch balance' });
         }
       }
-      setTeamAnalytics(analyticsData);
-      setTotalTeamBalance(calculatedTotalBalance);
+
+      setAnalyticsData(fetchedAnalytics);
+      const calculatedTotalCombined = calculatedTotalTeam + calculatedTotalMarketingOps;
+      setSummary({
+        totalBalanceTeam: calculatedTotalTeam,
+        percentageTeam: currentTotalSupply > 0 ? (calculatedTotalTeam / currentTotalSupply) * 100 : 0,
+        totalBalanceMarketingOps: calculatedTotalMarketingOps,
+        percentageMarketingOps: currentTotalSupply > 0 ? (calculatedTotalMarketingOps / currentTotalSupply) * 100 : 0,
+        totalBalanceCombined: calculatedTotalCombined,
+        percentageCombined: currentTotalSupply > 0 ? (calculatedTotalCombined / currentTotalSupply) * 100 : 0,
+        totalSupply: currentTotalSupply,
+      });
 
     } catch (err) {
-      console.error("Error fetching team analytics:", err);
-      setError(err.message || "Failed to fetch team analytics. Check console for details.");
-    } finally {
-      setIsLoading(false);
-      setLoadingMessage('Loading team analytics...');
+      console.error("Error fetching analytics:", err);
+      setError(err.message || "Failed to fetch analytics.");
     }
-  }, [connection, tokenDecimals]);
+    finally {
+      setIsLoading(false);
+      setLoadingMessage('Loading analytics...');
+    }
+  }, [connection, tokenDecimals, summary.totalSupply]);
 
   useEffect(() => {
     if (connection) {
-        fetchTeamAnalytics();
+        fetchAnalytics();
     }
-  }, [connection, fetchTeamAnalytics]);
+  }, [connection, fetchAnalytics]);
+  
+  const isAnyWalletConfigured = TEAM_WALLET_ADDRESSES.length > 0 || MARKETING_OPERATIONAL_WALLET_ADDRESSES.some(addr => addr && !addr.startsWith("ReplaceWith"));
+
 
   return (
     <div className="home-container padding-container min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col items-center p-4 pt-20">
-      <div className="w-full max-w-5xl">
+      <div className="w-full max-w-6xl"> {/* Increased max-width for potentially wider layout */}
         <h1 className="leaderboard-page-title text-4xl sm:text-5xl mb-4">Team Wallets and Analytics</h1>
 
-        {/* === POINT 1: Introductory Text/Note === */}
         <div className="bg-black bg-opacity-30 p-4 rounded-lg shadow-lg mb-8 text-sm">
-          <p className="text-center mb-2">
-            This page provides a transparent overview of the $IE token holdings within wallets officially designated to the project team (excluding marketing wallet).
-            Displaying this information underscores our commitment and direct stake in the project's success.
-          </p>
-          {OFFICIAL_TEAM_WALLET_DECLARATION_LINK && OFFICIAL_TEAM_WALLET_DECLARATION_LINK !== "YOUR_LINK_TO_OFFICIAL_DECLARATION_HERE" && (
-            <p className="text-center">
-              For verification, team wallet addresses are officially declared here: {' '}
-              <a href={OFFICIAL_TEAM_WALLET_DECLARATION_LINK} target="_blank" rel="noopener noreferrer" className="text-highlight-color hover:underline">
-                Official Declaration
-              </a>.
+          {/* ... Introductory Text ... */}
+        </div>
+
+        {/* === BUBBLEMAP DISPLAY SECTION === */}
+        <div className="leaderboard-content-container mb-8 p-4 sm:p-6">
+          <h2 className="text-2xl font-semibold text-highlight-color mb-3 text-center uppercase tracking-wider">Live Token Distribution Map</h2>
+          {isBubblemapAvailable === true && (
+            <iframe
+              src={BUBBLEMAP_URL}
+              style={{ width: '100%', height: '500px', border: 'none', borderRadius: '8px' }}
+              title="$IE Token Bubblemap on Bubblemaps.io"
+            ></iframe>
+          )}
+          {isBubblemapAvailable === false && (
+            <p className="text-center text-yellow-400 text-sm p-4">
+              The live bubble map could not be loaded at this time. This might be due to temporary issues with the provider or API limitations (e.g., CORS).
+              You can try viewing it directly on {' '}
+              <a href={BUBBLEMAP_URL} target="_blank" rel="noopener noreferrer" className="text-highlight-color hover:underline">Bubblemaps.io</a>.
             </p>
           )}
+           {isBubblemapAvailable === null && ( // Still checking
+            <p className="text-center text-gray-400 text-sm p-4">Checking live map availability...</p>
+           )}
         </div>
-        {/* ======================================= */}
+        {/* ================================= */}
 
+
+        <div className="leaderboard-content-container mb-8 p-6">
+          <h2 className="text-2xl font-semibold text-highlight-color mb-3 text-center uppercase tracking-wider">Token Distribution Insights & Rationalization</h2>
+          {/* ... Token Distribution Insights JSX (same as previous full code) ... */}
+           <p className="text-sm text-gray-300 mb-4 text-center">
+      --
+          </p>
+          {summary.totalSupply > 0 && !isLoading && !error && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-6">
+                <div>
+                  <h3 className="text-md font-semibold text-purple-300">Total $IE Supply</h3>
+                  <p className="text-xl tabular-nums">{summary.totalSupply.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                </div>
+                <div>
+                  <h3 className="text-md font-semibold text-purple-300">Team Wallets Hold</h3>
+                  <p className="text-xl tabular-nums">{summary.percentageTeam.toFixed(2)}%</p>
+                  <p className="text-xs text-gray-400">({summary.totalBalanceTeam.toLocaleString(undefined, {maximumFractionDigits:0})} $IE)</p>
+                </div>
+                <div>
+                  <h3 className="text-md font-semibold text-purple-300">Marketing/Ops Wallets Hold</h3>
+                  <p className="text-xl tabular-nums">{summary.percentageMarketingOps.toFixed(2)}%</p>
+                   <p className="text-xs text-gray-400">({summary.totalBalanceMarketingOps.toLocaleString(undefined, {maximumFractionDigits:0})} $IE)</p>
+                </div>
+              </div>
+               <div className="text-center mb-4">
+                  <h3 className="text-lg font-semibold text-purple-300">Combined Project Wallets Hold</h3>
+                  <p className="text-2xl tabular-nums">
+                    {summary.percentageCombined.toFixed(2)}%
+                    <span className="text-sm"> of total supply</span>
+                  </p>
+                  <p className="text-sm text-gray-400 tabular-nums">
+                    ({summary.totalBalanceCombined.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: tokenDecimals || 2})} $IE)
+                  </p>
+              </div>
+              <div className="text-xs text-gray-400 space-y-2 text-left">
+                <p><strong className="text-purple-300">Team Wallets:</strong> These wallets hold allocations for core team members and contributors, reflecting long-term commitment to the project's development and success.</p>
+                <p><strong className="text-purple-300">Marketing/Operational Wallets:</strong> Funds in these wallets are designated for project growth activities, including marketing campaigns, community engagement, exchange listings, and other operational necessities.</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ... Loading, Error, Table, Disclaimer sections (mostly same as previous full code) ... */}
         {isLoading && (
           <div className="leaderboard-status-container mt-8">
             <div className="leaderboard-spinner rounded-full"></div>
@@ -141,104 +259,74 @@ const TeamAnalyticsPage = () => {
           </div>
         )}
 
-        {error && (!teamAnalytics || teamAnalytics.length === 0) && (
+        {!isLoading && error && (!analyticsData || analyticsData.length === 0) && (
           <div className="leaderboard-status-container leaderboard-error-message-box mt-8">
             <h3>Oops! Something went wrong.</h3>
             <p>{error}</p>
-            <button onClick={fetchTeamAnalytics} className="leaderboard-try-again-button">
-              Try Again
-            </button>
+            <button onClick={fetchAnalytics} className="leaderboard-try-again-button"> Try Again </button>
           </div>
         )}
 
         {!isLoading && (
           <>
-            {error && (teamAnalytics && teamAnalytics.length > 0) && (
+            {!isLoading && error && (analyticsData && analyticsData.length > 0) && (
                  <div className="my-4 p-4 bg-red-900 bg-opacity-50 border border-red-700 rounded-lg text-center">
                     <p className="text-red-300 font-semibold">Notice:</p>
                     <p className="text-red-400 text-sm">{error} Some wallet data might be incomplete.</p>
-                    <button onClick={fetchTeamAnalytics} className="leaderboard-try-again-button mt-2 text-xs py-1 px-2">
-                        Refresh Data
-                    </button>
+                    <button onClick={fetchAnalytics} className="leaderboard-try-again-button mt-2 text-xs py-1 px-2">Refresh Data</button>
                 </div>
             )}
 
-            <div className="leaderboard-content-container mb-6 p-6">
-              <h2 className="text-2xl font-semibold text-highlight-color mb-2 text-center uppercase tracking-wider">Total Team $IE Balance</h2>
-              <p className="text-4xl font-bold text-white text-center tabular-nums">
-                {totalTeamBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: tokenDecimals || 2 })} $IE
-              </p>
-            </div>
-
-            <div className="leaderboard-content-container">
-              <h3 className="text-xl font-semibold text-purple-300 mb-4 text-center uppercase tracking-wider">Individual Team Wallet Balances</h3>
-              {/* ... (rest of the table logic remains the same) ... */}
-              {TEAM_WALLET_ADDRESSES.length === 0 || TEAM_WALLET_ADDRESSES[0] === "ReplaceWithTeamWalletPubKey1" ? (
-                <p className="leaderboard-status-message text-yellow-400">--</p>
-              ) : teamAnalytics.length === 0 && !error ? (
-                 <p className="leaderboard-status-message">No wallet data found or all balances are zero.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="leaderboard-table">
-                    <thead>
-                      <tr>
-                        <th className="text-left">Wallet Address</th>
-                        <th className="text-right">$IE Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {teamAnalytics.map((wallet) => (
-                        <tr key={wallet.address}>
-                          <td className="address-column py-3 px-4">
-                            <a
-                              href={`https://solscan.io/account/${wallet.address}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={`View ${wallet.address} on Solscan`}
-                              className="hover:text-purple-400 transition-colors duration-100 ease-in-out"
-                            >
-                              {shortenAddress(wallet.address)}
-                            </a>
-                            {wallet.error && <p className="text-xs text-red-400 mt-1">{wallet.error}</p>}
-                          </td>
-                          <td className="amount-column py-3 px-4 tabular-nums">
-                            {wallet.error ? 'N/A' : wallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: tokenDecimals || 2 })}
-                          </td>
+            {!error && isAnyWalletConfigured && analyticsData.filter(w => !w.address.startsWith("ReplaceWith")).length > 0 && (
+                <div className="leaderboard-content-container mt-8">
+                  <h3 className="text-xl font-semibold text-purple-300 mb-4 text-center uppercase tracking-wider">Breakdown of Monitored Wallets</h3>
+                  <div className="overflow-x-auto">
+                    <table className="leaderboard-table">
+                      <thead>
+                        <tr>
+                          <th className="text-left px-3 py-3 sm:px-4">Category</th>
+                          <th className="text-left px-3 py-3 sm:px-4">Wallet Address</th>
+                          <th className="text-right px-3 py-3 sm:px-4">$IE Balance</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {analyticsData.filter(wallet => !wallet.address.startsWith("ReplaceWith")).map((wallet) => (
+                          <tr key={wallet.address}>
+                            <td className="category-column py-3 px-4 text-sm text-gray-300">{wallet.category}</td>
+                            <td className="address-column py-3 px-4">
+                              <a href={`https://solscan.io/account/${wallet.address}`} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400">
+                                {shortenAddress(wallet.address)}
+                              </a>
+                              {wallet.error && <p className="text-xs text-red-400 mt-1">{wallet.error}</p>}
+                            </td>
+                            <td className="amount-column py-3 px-4 tabular-nums">
+                              {wallet.error ? 'N/A' : wallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: tokenDecimals || 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              )}
-            </div>
+            )}
+            { /* Handling for no data or not configured states */ }
+            {!isLoading && !error && (!isAnyWalletConfigured || analyticsData.filter(w => !w.address.startsWith("ReplaceWith")).length === 0) && (
+                <div className="leaderboard-content-container mt-8">
+                     <p className="leaderboard-status-message p-4">
+                        {isAnyWalletConfigured ? "No balances found for the configured wallets, or all balances are zero." : "Please configure team and marketing/operational wallet addresses in the component code."}
+                    </p>
+                </div>
+             )}
+
             <div className="text-center mt-6">
-                <button
-                    onClick={fetchTeamAnalytics}
-                    disabled={isLoading}
-                    className="leaderboard-try-again-button"
-                >
+                <button onClick={fetchAnalytics} disabled={isLoading} className="leaderboard-try-again-button">
                     {isLoading ? 'Refreshing...' : 'Refresh Analytics'}
                 </button>
             </div>
 
-            {/* === POINT 4: Disclaimer Section === */}
             <div className="text-center text-xs text-gray-300 mt-12 mb-8 p-4 bg-black bg-opacity-20 rounded-lg">
-              <h4 className="font-semibold mb-2 text-sm text-gray-200">Disclaimer:</h4>
-              <p className="mb-1">
-                All information presented on this page is for transparency and informational purposes only.
-                It is sourced directly from the Solana blockchain and is subject to the inherent characteristics of public ledger data.
-              </p>
-              <p className="mb-1">
-                Cryptocurrency investments carry significant risk. This information should not be considered financial advice.
-                Always conduct your own thorough research (DYOR) before making any investment decisions.
-              </p>
-              <p>
-                For official project information, please refer to our {' '}
-                <a href="/whitepaper" className="text-highlight-color hover:underline">Whitepaper</a> {/* Citing existing Whitepaper page */}
-                {' '} and official communication channels.
-              </p>
+                {/* ... Disclaimer ... */}
             </div>
-            {/* =================================== */}
           </>
         )}
       </div>
