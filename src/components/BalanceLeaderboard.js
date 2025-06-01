@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { AccountLayout, MintLayout, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+// import '../styles/globals.css'; // Or ensure imported at App level
 
 const IE_MINT_ADDRESS = 'DfYVDWY1ELNpQ4s1CK5d7EJcgCGYw27DgQo2bFzMH6fA';
 
@@ -16,11 +17,13 @@ const BalanceLeaderboard = ({ tokenMintAddress = IE_MINT_ADDRESS }) => {
   const [holders, setHolders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  // tokenDecimals and loadingMessage state remain the same
   const [tokenDecimals, setTokenDecimals] = useState(null);
   const [loadingMessage, setLoadingMessage] = useState('Loading Top Holders by Balance...');
 
+
   const fetchTopHoldersByBalance = useCallback(async () => {
-    // ... (data fetching logic remains the same as previous version)
+    // ... (data fetching logic remains the same)
     if (!connection || !tokenMintAddress) {
       setHolders([]); setError(null); return;
     }
@@ -75,21 +78,21 @@ const BalanceLeaderboard = ({ tokenMintAddress = IE_MINT_ADDRESS }) => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col justify-center items-center h-64 py-10">
-        <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-4 border-b-4 border-purple-500"></div>
-        <p className="ml-4 mt-4 text-base sm:text-lg text-gray-300">{loadingMessage}</p>
+      <div className="leaderboard-status-container">
+        <div className="leaderboard-spinner rounded-full"></div> {/* Tailwind 'animate-spin' can be kept or use CSS animation */}
+        <p className="leaderboard-status-message">{loadingMessage}</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-10 px-4 bg-red-700 bg-opacity-30 rounded-lg shadow-lg">
-        <h3 className="text-lg sm:text-xl font-semibold text-red-300 mb-2">Oops! Something went wrong.</h3>
-        <p className="text-red-400 text-sm sm:text-base">{error}</p>
+      <div className="leaderboard-status-container leaderboard-error-message-box">
+        <h3>Oops! Something went wrong.</h3>
+        <p>{error}</p>
         <button
           onClick={fetchTopHoldersByBalance}
-          className="mt-6 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
+          className="leaderboard-try-again-button"
         >
           Try Again
         </button>
@@ -98,45 +101,37 @@ const BalanceLeaderboard = ({ tokenMintAddress = IE_MINT_ADDRESS }) => {
   }
 
   if (holders.length === 0) {
-    return <div className="text-center py-10 text-base sm:text-lg text-gray-400">No holders found or data still processing.</div>;
+    return <div className="leaderboard-status-container leaderboard-status-message">No holders found or data still processing.</div>;
   }
 
   return (
-    <div className="bg-gray-900 bg-opacity-60 backdrop-blur-lg rounded-xl shadow-xl p-3 sm:p-4 md:p-6">
-      {/* Title removed from here, handled by LeaderboardPage.js and tab */}
-      <div className="overflow-x-auto rounded-md">
-        <table className="min-w-full divide-y divide-gray-700 border border-gray-700">
-          <thead className="bg-gray-800 bg-opacity-75">
+    <div className="leaderboard-content-container">
+      {/* Title was handled by LeaderboardPage.js */}
+      <div className="overflow-x-auto"> {/* Keep overflow-x-auto for responsiveness */}
+        <table className="leaderboard-table">
+          <thead>
             <tr>
-              <th scope="col" className="px-3 py-3 sm:px-4 sm:py-3.5 text-center text-xs sm:text-sm font-semibold text-purple-300 uppercase tracking-wider">
-                Rank
-              </th>
-              <th scope="col" className="px-3 py-3 sm:px-4 sm:py-3.5 text-left text-xs sm:text-sm font-semibold text-purple-300 uppercase tracking-wider">
-                Address
-              </th>
-              <th scope="col" className="px-3 py-3 sm:px-4 sm:py-3.5 text-right text-xs sm:text-sm font-semibold text-purple-300 uppercase tracking-wider">
-                Amount (IE)
-              </th>
+              {/* Added th.text-center for specific alignment, or manage in CSS */}
+              <th scope="col" className="text-center">Rank</th>
+              <th scope="col" className="text-left">Address</th>
+              <th scope="col" className="text-right">Amount (IE)</th>
             </tr>
           </thead>
-          <tbody className="bg-gray-800 bg-opacity-40 divide-y divide-gray-700">
+          <tbody>
             {holders.slice(0, 50).map((holder, index) => (
-              <tr key={holder.owner} className="hover:bg-gray-700 hover:bg-opacity-50 transition-colors duration-100 ease-in-out">
-                <td className="px-3 py-3 sm:px-4 whitespace-nowrap text-sm text-center text-gray-300 tabular-nums">
-                  {index + 1}
-                </td>
-                <td className="px-3 py-3 sm:px-4 whitespace-nowrap text-sm text-gray-200">
+              <tr key={holder.owner}>
+                <td className="rank-column tabular-nums">{index + 1}</td>
+                <td className="address-column">
                   <a
                     href={`https://solscan.io/account/${holder.owner}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     title={`View ${holder.owner} on Solscan`}
-                    className="hover:text-purple-400 transition-colors duration-100 ease-in-out"
                   >
                     {shortenAddress(holder.owner)}
                   </a>
                 </td>
-                <td className="px-3 py-3 sm:px-4 whitespace-nowrap text-sm text-gray-200 text-right tabular-nums">
+                <td className="amount-column tabular-nums">
                   {typeof holder.uiAmount === 'number' && !isNaN(holder.uiAmount)
                     ? holder.uiAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -150,7 +145,7 @@ const BalanceLeaderboard = ({ tokenMintAddress = IE_MINT_ADDRESS }) => {
         </table>
       </div>
       {holders.length > 0 && (
-        <p className="text-center text-xs sm:text-sm text-gray-500 mt-4">
+        <p className="text-center text-xs sm:text-sm text-gray-500 mt-4"> {/* Style this as leaderboard-status-message or similar if desired */}
           {holders.length > 50 ? "Showing top 50 holders by balance." : `Showing all ${holders.length} holders.`}
         </p>
       )}
