@@ -130,7 +130,7 @@ const TeamAnalyticsPage = () => {
           fetchedAnalyticsData.push({ ...walletConfig, balance: ieBalanceForWallet });
           if (walletConfig.category === "Team") {
             calculatedTotalTeam += ieBalanceForWallet;
-          } else if (walletConfig.category === "Marketing/Operational") {
+          } else if (walletConfig.category === "Marketing") {
             calculatedTotalMarketingOps += ieBalanceForWallet;
           }
         } catch (walletErr) {
