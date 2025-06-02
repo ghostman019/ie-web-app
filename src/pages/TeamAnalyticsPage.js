@@ -19,9 +19,11 @@ const TEAM_WALLET_ADDRESSES = [
 ];
 
 const MARKETING_OPERATIONAL_WALLET_ADDRESSES = [
-  "CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73", 
+  "ReplaceWithMarketingWalletAddress1", // Example: Marketing Fund - REPLACE THIS
+  // "ReplaceWithOperationsWalletAddress2", // Example: CEX Listing Fund
 ];
 
+// const OFFICIAL_TEAM_WALLET_DECLARATION_LINK = "YOUR_LINK_TO_OFFICIAL_DECLARATION_HERE"; // Removed as intro block was removed
 const BUBBLEMAP_URL = `https://app.bubblemaps.io/sol/token/${IE_MINT_ADDRESS}`;
 // --- End Constants ---
 
@@ -75,7 +77,7 @@ const TeamAnalyticsPage = () => {
 
     const allConfiguredWallets = [
       ...TEAM_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Team" })),
-      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing" }))
+      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing/Operational" }))
     ].filter(w => w.address && !w.address.startsWith("ReplaceWith"));
 
     if (allConfiguredWallets.length === 0) {
@@ -166,25 +168,31 @@ const TeamAnalyticsPage = () => {
   
   const isAnyRealWalletConfigured = TEAM_WALLET_ADDRESSES.length > 0 || MARKETING_OPERATIONAL_WALLET_ADDRESSES.some(addr => addr && !addr.startsWith("ReplaceWith"));
 
+  // Formatting options for 3 decimal places
+  const balanceFormatOptions = {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col items-center">
       {/* Main content wrapper - PADDING REMOVED, except for top/bottom to clear navbar and give footer space */}
-      <div className="w-full max-w-6xl pt-20 pb-8 sm:pb-10 md:pb-12"> {/* REMOVED px classes */}
+      <div className="w-full max-w-6xl pt-20 pb-8 sm:pb-10 md:pb-12">
         
         <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl mb-4 sm:mb-5 md:mb-6 text-center">Team Wallets and Analytics</h1>
 
-        {/* BUBBLEMAP IFRAME DISPLAY SECTION - PADDING REMOVED FROM CARD */}
-        <div className="leaderboard-content-container w-full mb-4 sm:mb-5"> {/* REMOVED p- classes */}
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-highlight-color mb-2 sm:mb-3 text-center uppercase tracking-wider px-2">Live Token Distribution Map</h2> {/* Added px-2 to title for slight spacing from card edge */}
+        {/* BUBBLEMAP IFRAME DISPLAY SECTION - Padding removed from card, minimal inner padding for text */}
+        <div className="leaderboard-content-container w-full mb-4 sm:mb-5">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-highlight-color mb-2 sm:mb-3 text-center uppercase tracking-wider px-2 pt-2">Live Token Distribution Map</h2>
           {isBubblemapAvailable === true && (
-            <div className="mx-auto max-w-5xl"> 
+            <div className="mx-auto max-w-5xl px-1 pb-1"> 
               <iframe
                 src={BUBBLEMAP_URL}
                 style={{ 
                   width: '100%', 
                   height: '450px', 
                   border: 'none', 
-                  borderRadius: '8px' // This might be visually odd if the container has no padding
+                  borderRadius: '8px' 
                 }}
                 title="$IE Token Bubblemap on Bubblemaps.io"
                 onError={() => { console.warn("Iframe failed to load content."); setIsBubblemapAvailable(false); }}
@@ -192,70 +200,72 @@ const TeamAnalyticsPage = () => {
             </div>
           )}
           {isBubblemapAvailable === false && (
-            <p className="text-center text-yellow-400 text-xs p-2"> {/* Added p-2 for inner spacing */}
+            <p className="text-center text-yellow-400 text-xs p-2">
               The live bubble map could not be loaded. View directly on {' '}
               <a href={BUBBLEMAP_URL} target="_blank" rel="noopener noreferrer" className="text-highlight-color hover:underline">Bubblemaps.io</a>.
             </p>
           )}
-           {isBubblemapAvailable === null && ( // Correct: no stray '>'
+           {isBubblemapAvailable === null && (
             <p className="text-center text-gray-400 text-xs p-2">Checking live map availability...</p>
            )}
         </div>
 
-        {/* TOKEN DISTRIBUTION INSIGHTS & RATIONALIZATION SECTION - PADDING REMOVED FROM CARD */}
-        <div className="leaderboard-content-container w-full mb-4 sm:mb-5"> {/* REMOVED p- classes */}
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-highlight-color mb-1 sm:mb-2 text-center uppercase tracking-wider px-2">Token Distribution Insights</h2> {/* Added px-2 */}
-          <p className="text-xs text-gray-300 mb-2 sm:mb-3 text-center px-2"> {/* Added px-2 */}
-            This section clarifies project-affiliated wallet holdings relative to the total supply, and accounts fully for bubblemap data.
-          </p>
-          {summary.totalSupply > 0 && !isLoading && !error && (
-            <div className="px-1 sm:px-2"> {/* Added inner padding for this content block */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center mb-2 sm:mb-3">
-                <div>
-                  <h3 className="text-xs font-semibold text-purple-300">Total $IE Supply</h3>
-                  <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.totalSupply.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+        {/* TOKEN DISTRIBUTION INSIGHTS & RATIONALIZATION SECTION - Padding removed from card, inner div for content padding */}
+        <div className="leaderboard-content-container w-full mb-4 sm:mb-5">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-highlight-color mb-1 sm:mb-2 text-center uppercase tracking-wider px-2 pt-2">Token Distribution Insights</h2>
+          <div className="px-2 pb-2"> 
+            <p className="text-xs text-gray-300 mb-2 sm:mb-3 text-center">
+              This section clarifies project-affiliated wallet holdings relative to the total supply.
+            </p>
+            {summary.totalSupply > 0 && !isLoading && !error && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center mb-2 sm:mb-3">
+                  <div>
+                    <h3 className="text-xs font-semibold text-purple-300">Total $IE Supply</h3>
+                    <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.totalSupply.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-purple-300">Team Wallets Hold</h3>
+                    <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.percentageTeam.toFixed(2)}%</p>
+                    <p className="text-xs text-gray-400">({summary.totalBalanceTeam.toLocaleString(undefined, balanceFormatOptions)} $IE)</p>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-purple-300">Marketing/Ops Wallets Hold</h3>
+                    <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.percentageMarketingOps.toFixed(2)}%</p>
+                    <p className="text-xs text-gray-400">({summary.totalBalanceMarketingOps.toLocaleString(undefined, balanceFormatOptions)} $IE)</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xs font-semibold text-purple-300">Team Wallets Hold</h3>
-                  <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.percentageTeam.toFixed(2)}%</p>
-                  <p className="text-xs text-gray-400">({summary.totalBalanceTeam.toLocaleString(undefined, {maximumFractionDigits:0})} $IE)</p>
+                 <div className="text-center mb-2 sm:mb-3">
+                    <h3 className="text-xs sm:text-sm font-semibold text-purple-300">Combined Project Wallets Hold</h3>
+                    <p className="text-sm sm:text-base md:text-lg tabular-nums">
+                      {summary.percentageCombined.toFixed(2)}%
+                      <span className="text-xs"> of total supply</span>
+                    </p>
+                    <p className="text-xs text-gray-400 tabular-nums">
+                      ({summary.totalBalanceCombined.toLocaleString(undefined, balanceFormatOptions)} $IE)
+                    </p>
                 </div>
-                <div>
-                  <h3 className="text-xs font-semibold text-purple-300">Marketing Wallets Hold</h3>
-                  <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.percentageMarketingOps.toFixed(2)}%</p>
-                   <p className="text-xs text-gray-400">({summary.totalBalanceMarketingOps.toLocaleString(undefined, {maximumFractionDigits:0})} $IE)</p>
+                <div className="text-xs text-gray-300 space-y-1 sm:space-y-1.5 text-left">
+                  <p><strong className="text-purple-300">Team Wallets:</strong> Allocations for core team/contributors, often vested, showing long-term commitment.</p>
+                  <p><strong className="text-purple-300">Marketing/Operational Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p>
                 </div>
-              </div>
-               <div className="text-center mb-2 sm:mb-3">
-                  <h3 className="text-xs sm:text-sm font-semibold text-purple-300">Combined Project Wallets Hold</h3>
-                  <p className="text-sm sm:text-base md:text-lg tabular-nums">
-                    {summary.percentageCombined.toFixed(2)}%
-                    <span className="text-xs"> of total supply</span>
-                  </p>
-                  <p className="text-xs text-gray-400 tabular-nums">
-                    ({summary.totalBalanceCombined.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: tokenDecimals || 2})} $IE)
-                  </p>
-              </div>
-              <div className="text-xs text-gray-300 space-y-1 sm:space-y-1.5 text-left">
-                <p><strong className="text-purple-300">Team Wallets:</strong> Allocations for core team/contributors, often vested, showing long-term commitment.</p>
-                <p><strong className="text-purple-300">Marketing Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p>
-              </div>
-            </div>
-          )}
-          {summary.totalSupply === 0 && !isLoading && !error && (
-             <p className="leaderboard-status-message text-yellow-400 p-2 text-xs">Total supply data unavailable. Try refreshing.</p>
-           )}
+              </>
+            )}
+            {summary.totalSupply === 0 && !isLoading && !error && (
+               <p className="leaderboard-status-message text-yellow-400 p-2 text-xs">Total supply data unavailable. Try refreshing.</p>
+             )}
+          </div>
         </div>
 
         {isLoading && (
-          <div className="leaderboard-status-container w-full mt-3 sm:mt-4"> {/* Removed p- from here, will rely on internal text padding */}
+          <div className="leaderboard-status-container w-full mt-3 sm:mt-4">
             <div className="leaderboard-spinner rounded-full"></div>
-            <p className="leaderboard-status-message text-xs sm:text-sm mt-2"> {/* Added mt-2 */} {loadingMessage}</p>
+            <p className="leaderboard-status-message text-xs sm:text-sm mt-2">{loadingMessage}</p>
           </div>
         )}
 
         {!isLoading && error && (!analyticsData || analyticsData.filter(w => !w.address.startsWith("ReplaceWith")).length === 0) && (
-          <div className="leaderboard-status-container leaderboard-error-message-box w-full mt-3 sm:mt-4 p-2"> {/* Kept some padding for error box */}
+          <div className="leaderboard-status-container leaderboard-error-message-box w-full mt-3 sm:mt-4 p-2">
             <h3 className="text-sm sm:text-base">Oops! Something went wrong.</h3>
             <p className="text-xs sm:text-sm">{error}</p>
             <button onClick={fetchAnalytics} className="leaderboard-try-again-button text-xs sm:text-sm mt-2"> Try Again </button>
@@ -273,10 +283,10 @@ const TeamAnalyticsPage = () => {
             )}
 
             {!error && isAnyRealWalletConfigured && analyticsData.filter(w => !w.address.startsWith("ReplaceWith")).length > 0 && (
-                <div className="leaderboard-content-container w-full mt-3 sm:mt-4"> {/* REMOVED p- classes */}
-                  <h3 className="text-sm sm:text-base md:text-lg font-semibold text-purple-300 mb-1.5 sm:mb-2 text-center uppercase tracking-wider px-1">Breakdown of Monitored Wallets</h3> {/* Added px-1 */}
-                  <div className="overflow-x-auto px-0.5"> {/* Added tiny padding for scrollbar */}
-                    <table className="leaderboard-table w-full"> {/* Ensured table is w-full of this container */}
+                <div className="leaderboard-content-container w-full mt-3 sm:mt-4">
+                  <h3 className="text-sm sm:text-base md:text-lg font-semibold text-purple-300 mb-1.5 sm:mb-2 text-center uppercase tracking-wider px-1 pt-1">Breakdown of Monitored Wallets</h3>
+                  <div className="overflow-x-auto px-0.5 pb-0.5">
+                    <table className="leaderboard-table w-full">
                       <thead>
                         <tr>
                           <th className="text-left px-1 py-1 text-xs">Category</th>
@@ -295,7 +305,7 @@ const TeamAnalyticsPage = () => {
                               {wallet.error && <p className="text-xs text-red-400 mt-0.5">{wallet.error}</p>}
                             </td>
                             <td className="py-1 px-1 text-xs tabular-nums text-right">
-                              {wallet.error ? 'N/A' : wallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: tokenDecimals || 2 })}
+                              {wallet.error ? 'N/A' : wallet.balance.toLocaleString(undefined, balanceFormatOptions)}
                             </td>
                           </tr>
                         ))}
@@ -318,9 +328,8 @@ const TeamAnalyticsPage = () => {
                 </button>
             </div>
 
-            {/* DISCLAIMER REGION - PADDING REMOVED FROM CARD, add slight inner padding to text if needed */}
-            <div className="leaderboard-content-container w-full text-center text-xs text-gray-300 mt-4 sm:mt-6 mb-4 sm:mb-6"> {/* REMOVED p- classes */}
-                 <div className="p-2 sm:p-3"> {/* Added an inner div for padding text content */}
+            <div className="leaderboard-content-container w-full text-center text-xs text-gray-300 mt-4 sm:mt-6 mb-4 sm:mb-6">
+                 <div className="p-2 sm:p-3">
                     <h4 className="font-semibold mb-1 sm:mb-2 text-xs sm:text-sm text-gray-200">Disclaimer:</h4>
                     <p className="mb-0.5 sm:mb-1">
                         All information on this page is for transparency and informational purposes only, sourced directly from the Solana blockchain.
