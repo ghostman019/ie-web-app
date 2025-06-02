@@ -15,6 +15,7 @@ const TEAM_WALLET_ADDRESSES = [
   "Ffkzj1iFe4fxgiMS6oyS5hbDqV1kECBNXCruyXAQkS7z",
   "HmqgsN2gEpj431UU5AJVp8vZ3849M5Xqz48pz723uV66",
   "BmByXNe6S697h7iFtfzpEse74RDNumvzToNWo15hvBhf",
+  "AuPARo8UW4FcuUf8ctoM1ptERGqJpVS71nKiNar9ABNi",
   "5CJrGxtDBEBFYERBSrrDBy8Rrtv2R7urykBLPii9cxxL",
 ];
 
