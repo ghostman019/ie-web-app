@@ -113,6 +113,15 @@ const TeamAnalyticsPage = () => {
         } catch (walletErr) { 
           console.warn(`Could not process project wallet ${walletConfig.address}: ${walletErr.message}`);
           fetchedProjectData.push({ ...walletConfig, balance: 0, error: 'Fetch failed' }); 
+          fetchedAnalyticsData.push({ ...walletConfig, balance: ieBalanceForWallet });
+          if (walletConfig.category === "Team") {
+            calculatedTotalTeam += ieBalanceForWallet;
+          } else if (walletConfig.category === "Marketing") {
+            calculatedTotalMarketingOps += ieBalanceForWallet;
+          }
+        } catch (walletErr) {
+          console.warn(`Could not process wallet ${walletConfig.address}: ${walletErr.message}`);
+          fetchedAnalyticsData.push({ ...walletConfig, balance: 0, error: 'Could not fetch balance' });
         }
       }
       setProjectWalletsAnalytics(fetchedProjectData);
