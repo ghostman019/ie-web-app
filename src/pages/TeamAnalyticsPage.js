@@ -37,7 +37,35 @@ const KNOWN_WALLET_BUNDLES = [
   { 
     name: "Marketing Fund", 
     color: "rgba(100, 220, 100, 0.3)",
-    addresses: ["CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73"]
+    addresses: ["CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73",
+      "Ffkzj1iFe4fxgiMS6oyS5hbDqV1kECBNXCruyXAQkS7z",
+      "AuPARo8UW4FcuUf8ctoM1ptERGqJpVS71nKiNar9ABNi",
+    ]
+  },
+  { 
+    name: "Team Lead Project Contributions", 
+    color: "rgba(100, 220, 100, 0.3)",
+    addresses: ["AuPARo8UW4FcuUf8ctoM1ptERGqJpVS71nKiNar9ABNi",
+      "CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73",
+
+    ]
+  },
+  { 
+    name: "Early Accumulation Holdings", 
+    color: "rgba(100, 220, 100, 0.3)",
+    addresses: ["CficDw4M9HqNnorEyUXma8pYK6585CRb5SNJ3jqiyUW",
+      "J9AjnjE63M9YvwyfuRByzVFkNDSuvKoCBaf3goZNuR92",
+      "DCAxxMBJjBPK6M4MtiusQHWp91J3jU49sWkGGvuPp9KM",
+
+    ]
+  },
+  { 
+    name: "$IE Liquidity Pool", 
+    color: "rgba(100, 220, 100, 0.3)",
+    addresses: [
+      "5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1",
+
+    ]
   },
   // Add more bundle definitions as needed
 ];
