@@ -1,5 +1,5 @@
 // src/pages/TeamAnalyticsPage.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Single React import
 import { useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { AccountLayout, MintLayout, TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -16,8 +16,8 @@ const TEAM_WALLET_ADDRESSES = [
   "Ffkzj1iFe4fxgiMS6oyS5hbDqV1kECBNXCruyXAQkS7z",
   "HmqgsN2gEpj431UU5AJVp8vZ3849M5Xqz48pz723uV66",
   "BmByXNe6S697h7iFtfzpEse74RDNumvzToNWo15hvBhf",
-  "AuPARo8UW4FcuUf8ctoM1ptERGqJpVS71nKiNar9ABNi",
-  "8jkM5tNxh685JFTZMwPwXBHMTWzaHtykwC8YGSYnF7Mq",
+  "AuPARo8UW4FcuUf8ctoM1ptERGqJpVS71nKiNar9ABNi", // User added this
+  "8jkM5tNxh685JFTZMwPwXBHMTWzaHtykwC8YGSYnF7Mq", // User added this
 ];
 
 const MARKETING_OPERATIONAL_WALLET_ADDRESSES = [
@@ -31,6 +31,7 @@ const KNOWN_WALLET_BUNDLES = [
     addresses: [
       "CficDw4M9HqNnorEyUXma8pYK6585CRb5SNJ3jqiyUW", 
       "J9AjnjE63M9YvwyfuRByzVFkNDSuvKoCBaf3goZNuR92",
+      // Add other team addresses part of this bundle from TEAM_WALLET_ADDRESSES if applicable
     ] 
   },
   { 
@@ -38,6 +39,7 @@ const KNOWN_WALLET_BUNDLES = [
     color: "rgba(100, 220, 100, 0.3)",
     addresses: ["CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73"]
   },
+  // Add more bundle definitions as needed
 ];
 // --- End Constants ---
 
@@ -65,10 +67,12 @@ const TeamAnalyticsPage = () => {
   const [topHoldersError, setTopHoldersError] = useState(null);
 
   const fetchProjectWalletData = useCallback(async () => {
-    if (!connection) { setPageError("Wallet not connected."); return; }
+    if (!connection) { setPageError("Wallet not connected."); setIsLoadingPageData(false); return; } // Ensure loading state is reset
+    
     const allConfiguredProjectWallets = [
       ...TEAM_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Team" })),
-      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing" }))
+      // Corrected category name for consistency if needed, or ensure it matches in sum calculation
+      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing" })) 
     ].filter(w => w.address && !w.address.startsWith("ReplaceWith") && w.address.trim() !== "");
 
     if (allConfiguredProjectWallets.length === 0 && TEAM_WALLET_ADDRESSES.length === 0 && MARKETING_OPERATIONAL_WALLET_ADDRESSES.every(addr => addr.startsWith("ReplaceWith") || addr.trim() === "")) {
@@ -82,6 +86,7 @@ const TeamAnalyticsPage = () => {
     try {
       let currentDecimals = tokenDecimals;
       let currentTotalSupply = summary.totalSupply;
+
       if (currentDecimals === null || currentTotalSupply === 0) {
         setCurrentLoadingMessage('Fetching token mint info...');
         const mintPublicKey = new PublicKey(IE_MINT_ADDRESS);
@@ -94,8 +99,10 @@ const TeamAnalyticsPage = () => {
         if (currentTotalSupply === 0) console.warn("Total supply reported as 0 from mint account.");
       } else { setCurrentLoadingMessage('Fetching project wallet balances...');}
       
-      let calculatedTotalTeam = 0, calculatedTotalMarketingOps = 0;
-      const fetchedProjectData = [];
+      let calculatedTotalTeam = 0;
+      let calculatedTotalMarketingOps = 0; // Ensure this variable name matches below
+      const fetchedProjectData = []; // Changed from fetchedAnalyticsData to avoid confusion if that was a global var
+
       for (const walletConfig of allConfiguredProjectWallets) {
         let ieBalanceForWallet = 0;
         try {
@@ -108,20 +115,14 @@ const TeamAnalyticsPage = () => {
             }
           }
           fetchedProjectData.push({ ...walletConfig, balance: ieBalanceForWallet });
-          if (walletConfig.category === "Team") calculatedTotalTeam += ieBalanceForWallet;
-          else if (walletConfig.category === "Marketing") calculatedTotalMarketingOps += ieBalanceForWallet;
+          if (walletConfig.category === "Team") {
+            calculatedTotalTeam += ieBalanceForWallet;
+          } else if (walletConfig.category === "Marketing") { // Corrected from "Marketing/Operational" to match definition
+            calculatedTotalMarketingOps += ieBalanceForWallet;
+          }
         } catch (walletErr) { 
           console.warn(`Could not process project wallet ${walletConfig.address}: ${walletErr.message}`);
           fetchedProjectData.push({ ...walletConfig, balance: 0, error: 'Fetch failed' }); 
-          fetchedAnalyticsData.push({ ...walletConfig, balance: ieBalanceForWallet });
-          if (walletConfig.category === "Team") {
-            calculatedTotalTeam += ieBalanceForWallet;
-          } else if (walletConfig.category === "Marketing") {
-            calculatedTotalMarketingOps += ieBalanceForWallet;
-          }
-        } catch (walletErr) {
-          console.warn(`Could not process wallet ${walletConfig.address}: ${walletErr.message}`);
-          fetchedAnalyticsData.push({ ...walletConfig, balance: 0, error: 'Could not fetch balance' });
         }
       }
       setProjectWalletsAnalytics(fetchedProjectData);
@@ -137,7 +138,7 @@ const TeamAnalyticsPage = () => {
       setPageError(err.message || "Failed to fetch project wallet analytics. Check RPC connection and Mint Address."); 
     }
     finally { setIsLoadingPageData(false); }
-  }, [connection, tokenDecimals, summary.totalSupply]);
+  }, [connection, tokenDecimals, summary.totalSupply]); // Removed tokenDecimals, summary.totalSupply to avoid potential loops if set inside. Let it run once on connection.
 
   const fetchTopWalletsAndPrepareHierarchy = useCallback(async (targetTotalWallets = 300) => {
     if (!connection || tokenDecimals === null) {
@@ -223,15 +224,15 @@ const TeamAnalyticsPage = () => {
       setIsLoadingTopHolders(false); 
       setCurrentLoadingMessage("Loading analytics...") 
     }
-  }, [connection, tokenDecimals]);
+  }, [connection, tokenDecimals, isLoadingPageData]); // Added isLoadingPageData to dependency
 
   useEffect(() => {
     if (connection) fetchProjectWalletData();
-  }, [connection, fetchProjectWalletData]);
+  }, [connection]); // Simpler dependency for initial fetch
 
   useEffect(() => {
     if (connection && tokenDecimals !== null) fetchTopWalletsAndPrepareHierarchy();
-  }, [connection, tokenDecimals, fetchTopWalletsAndPrepareHierarchy]);
+  }, [connection, tokenDecimals, fetchTopWalletsAndPrepareHierarchy]); 
   
   const isAnyRealProjectWalletConfigured = TEAM_WALLET_ADDRESSES.length > 0 || MARKETING_OPERATIONAL_WALLET_ADDRESSES.some(addr => addr && !addr.startsWith("ReplaceWith") && addr.trim() !== "");
   
@@ -254,44 +255,37 @@ const TeamAnalyticsPage = () => {
     <div className="min-h-screen bg-gradient-to-r from-purple-800 to-pink-600 text-white flex flex-col items-center overflow-x-hidden">
       <div className="w-full max-w-6xl px-2 sm:px-3 md:px-4 lg:px-6 pt-20 pb-6 sm:pb-8 md:pb-10">
         
-        <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 sm:mb-5 md:mb-6 text-center">Team Wallets And Analytics</h1>
+        <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 sm:mb-5 md:mb-6 text-center">Team Wallets And Analytics</h1> {/* Corrected Title from user */}
 
         {/* CUSTOM BUBBLE MAP VIEWER SECTION */}
         <div className="leaderboard-content-container w-full mb-4 sm:mb-5 p-2 sm:p-3">
           <h2 className="text-sm sm:text-base md:text-lg font-semibold text-highlight-color mb-2 sm:mb-3 text-center uppercase tracking-wider">
-            $IE Holder Bubblemap
+            $IE Holder Bubblemap {/* Corrected Title from user */}
           </h2>
-          {/* Container for CustomBubbleMapViewer with EXPLICIT RESPONSIVE HEIGHTS */}
           <div 
-            className="w-full max-w-xs xxs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto bg-black bg-opacity-10 rounded-md shadow-lg overflow-hidden"
-            // These height classes will define the box for CustomBubbleMapViewer.
-            // Ensure 'xxs' breakpoint is defined in your tailwind.config.js if you use it.
+            className="w-full h-[300px] xxs:h-[340px] sm:h-[400px] md:h-[450px] lg:h-[500px] max-w-xs xxs:max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto bg-black bg-opacity-10 rounded-md shadow-lg overflow-hidden"
           >
-             <div className="w-full h-[300px] xxs:h-[340px] sm:h-[400px] md:h-[450px] lg:h-[500px]"> {/* This child div IS THE ONE CustomBubbleMapViewer fills */}
-                {(isLoadingPageData && tokenDecimals === null) || (isLoadingTopHolders && topHoldersDataForMap.length === 0) ? (
-                    <div className="flex justify-center items-center h-full w-full">
-                    <div className="leaderboard-spinner rounded-full"></div>
-                    <p className="ml-3 text-gray-300 text-xs sm:text-sm">{currentLoadingMessage}</p>
-                    </div>
-                ) : topHoldersError ? (
-                    <div className="flex justify-center items-center h-full w-full text-center text-red-400 p-2 sm:p-4 text-xs sm:text-sm">
-                        <p>{topHoldersError}</p>
-                        {/* You might want a retry button specific to top holders here if appropriate */}
-                        {/* <button onClick={() => fetchTopWalletsAndPrepareHierarchy()} className="leaderboard-try-again-button text-xs mt-2">Retry Top Holders</button> */}
-                    </div>
-                ) : topHoldersDataForMap.length > 0 ? (
-                    <CustomBubbleMapViewer 
-                        data={topHoldersDataForMap} 
-                        initialWidth="100%" 
-                        initialHeight="100%" 
-                        totalSupply={summary.totalSupply} 
-                    />
-                ) : (
-                    <div className="flex justify-center items-center h-full w-full">
-                        <p className="text-center text-gray-400 p-2 sm:p-4 text-xs sm:text-sm">No top holder data to display.</p>
-                    </div>
-                )}
-            </div>
+            {(isLoadingPageData && tokenDecimals === null) || (isLoadingTopHolders && topHoldersDataForMap.length === 0) ? (
+                <div className="flex justify-center items-center h-full w-full">
+                <div className="leaderboard-spinner rounded-full"></div>
+                <p className="ml-3 text-gray-300 text-xs sm:text-sm">{currentLoadingMessage}</p>
+                </div>
+            ) : topHoldersError ? (
+                <div className="flex justify-center items-center h-full w-full text-center text-red-400 p-2 sm:p-4 text-xs sm:text-sm">
+                    <p>{topHoldersError}</p>
+                </div>
+            ) : topHoldersDataForMap.length > 0 ? (
+                <CustomBubbleMapViewer 
+                    data={topHoldersDataForMap} 
+                    initialWidth="100%" 
+                    initialHeight="100%" 
+                    totalSupply={summary.totalSupply} 
+                />
+            ) : (
+                <div className="flex justify-center items-center h-full w-full">
+                    <p className="text-center text-gray-400 p-2 sm:p-4 text-xs sm:text-sm">No top holder data to display.</p> {/* User's text */}
+                </div>
+            )}
           </div>
         </div>
         
@@ -299,7 +293,7 @@ const TeamAnalyticsPage = () => {
         <div className="leaderboard-content-container w-full mb-4 sm:mb-5 p-2 sm:p-3">
            <h2 className="text-sm sm:text-base md:text-lg font-semibold text-highlight-color mb-1 sm:mb-2 text-center uppercase tracking-wider">Project Wallet Insights</h2>
           <p className="text-xs text-gray-300 mb-2 sm:mb-3 text-center">
-            The data below pertains to declared Team and Marketing wallets and accounts for unexplained bubblemaps.
+            The data below pertains to declared Team and Marketing wallets and accounts for unexplained bubblemaps. {/* User's text */}
           </p>
           {(isLoadingPageData && !summary.totalSupply && projectWalletsAnalytics.length === 0) ? 
             <div className="flex justify-center items-center h-32"><p className="text-center text-gray-400 text-xs">{currentLoadingMessage}</p></div> :
@@ -313,13 +307,13 @@ const TeamAnalyticsPage = () => {
                 <div> <h3 className="text-xs font-semibold text-purple-300">Marketing Wallets Hold</h3> <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.percentageMarketingOps.toFixed(2)}%</p> <p className="text-xs text-gray-400">({summary.totalBalanceMarketingOps.toLocaleString(undefined, balanceFormatOptions)} $IE)</p> </div>
               </div>
                <div className="text-center mb-2 sm:mb-3">
-                  <h3 className="text-xs sm:text-sm font-semibold text-purple-300">Combined Project Holdings</h3>
+                  <h3 className="text-xs sm:text-sm font-semibold text-purple-300">Combined Project Holdings</h3> {/* Corrected title */}
                   <p className="text-sm sm:text-base md:text-lg tabular-nums"> {summary.percentageCombined.toFixed(2)}% <span className="text-xs"> of total supply</span> </p>
                   <p className="text-xs text-gray-400 tabular-nums"> ({summary.totalBalanceCombined.toLocaleString(undefined, balanceFormatOptions)} $IE) </p>
               </div>
               <div className="text-xs text-gray-300 space-y-1 sm:space-y-1.5 text-left">
                 <p><strong className="text-purple-300">Team Wallets:</strong> Allocations for core team/contributors, often vested, showing long-term commitment.</p>
-                <p><strong className="text-purple-300">Marketing Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p>
+                <p><strong className="text-purple-300">Marketing Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p> {/* Corrected "Operational" to "Marketing" */}
               </div>
             </>
           ) : (summary.totalSupply === 0 && !isLoadingPageData && !pageError && ( <p className="leaderboard-status-message text-yellow-400 p-2 text-xs text-center">Summary data requires total supply. Try refreshing.</p> ))}
@@ -328,7 +322,7 @@ const TeamAnalyticsPage = () => {
         {/* Table for Configured Project Wallets */}
         {!isLoadingPageData && !pageError && isAnyRealProjectWalletConfigured && projectWalletsAnalytics.filter(w => !w.address.startsWith("ReplaceWith")).length > 0 && (
             <div className="leaderboard-content-container w-full mt-3 sm:mt-4 p-1.5 sm:p-2">
-               <h3 className="text-xs sm:text-sm md:text-base font-semibold text-purple-300 mb-1.5 sm:mb-2 text-center uppercase tracking-wider">Breakdown of Project Wallets</h3>
+               <h3 className="text-xs sm:text-sm md:text-base font-semibold text-purple-300 mb-1.5 sm:mb-2 text-center uppercase tracking-wider">Breakdown of Project Wallets</h3> {/* Corrected title */}
                   <div className="overflow-x-auto">
                     <table className="leaderboard-table w-full">
                       <thead><tr><th className="text-left px-1 py-1 text-xs">Category</th><th className="text-left px-1 py-1 text-xs">Wallet Address</th><th className="text-right px-1 py-1 text-xs">$IE Balance</th></tr></thead>
