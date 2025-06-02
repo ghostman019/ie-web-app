@@ -19,7 +19,7 @@ const TEAM_WALLET_ADDRESSES = [
 ];
 
 const MARKETING_OPERATIONAL_WALLET_ADDRESSES = [
-  "ReplaceWithMarketingWalletAddress1", // Example: Marketing Fund - REPLACE THIS
+  "CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73", // Example: Marketing Fund - REPLACE THIS
   // "ReplaceWithOperationsWalletAddress2", // Example: CEX Listing Fund
 ];
 
@@ -77,7 +77,7 @@ const TeamAnalyticsPage = () => {
 
     const allConfiguredWallets = [
       ...TEAM_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Team" })),
-      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing/Operational" }))
+      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing" }))
     ].filter(w => w.address && !w.address.startsWith("ReplaceWith"));
 
     if (allConfiguredWallets.length === 0) {
@@ -230,13 +230,13 @@ const TeamAnalyticsPage = () => {
                     <p className="text-xs text-gray-400">({summary.totalBalanceTeam.toLocaleString(undefined, balanceFormatOptions)} $IE)</p>
                   </div>
                   <div>
-                    <h3 className="text-xs font-semibold text-purple-300">Marketing/Ops Wallets Hold</h3>
+                    <h3 className="text-xs font-semibold text-purple-300">Marketing Wallets Hold</h3>
                     <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.percentageMarketingOps.toFixed(2)}%</p>
                     <p className="text-xs text-gray-400">({summary.totalBalanceMarketingOps.toLocaleString(undefined, balanceFormatOptions)} $IE)</p>
                   </div>
                 </div>
                  <div className="text-center mb-2 sm:mb-3">
-                    <h3 className="text-xs sm:text-sm font-semibold text-purple-300">Combined Project Wallets Hold</h3>
+                    <h3 className="text-xs sm:text-sm font-semibold text-purple-300">Combined Project Holdings</h3>
                     <p className="text-sm sm:text-base md:text-lg tabular-nums">
                       {summary.percentageCombined.toFixed(2)}%
                       <span className="text-xs"> of total supply</span>
@@ -247,7 +247,7 @@ const TeamAnalyticsPage = () => {
                 </div>
                 <div className="text-xs text-gray-300 space-y-1 sm:space-y-1.5 text-left">
                   <p><strong className="text-purple-300">Team Wallets:</strong> Allocations for core team/contributors, often vested, showing long-term commitment.</p>
-                  <p><strong className="text-purple-300">Marketing/Operational Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p>
+                  <p><strong className="text-purple-300">Marketing Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p>
                 </div>
               </>
             )}
