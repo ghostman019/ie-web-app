@@ -31,6 +31,7 @@
     "buffer": "^6.0.3",
     "cross-fetch": "^4.1.0",
     "crypto-browserify": "^3.12.1",
+    "d3": "^7.9.0",
     "get-pixels-frame-info-update": "^3.3.2",
     "gif-frames": "^1.0.1",
     "gif.js": "^0.2.0",
