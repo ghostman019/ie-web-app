@@ -19,7 +19,7 @@ const TEAM_WALLET_ADDRESSES = [
 ];
 
 const MARKETING_OPERATIONAL_WALLET_ADDRESSES = [
-  "ReplaceWithMarketingWalletAddress1", 
+  "CWeBUhLXGyXPBvsfL99VoZnVtC4uQfUh7cW8xiMY8N73", 
 ];
 
 const BUBBLEMAP_URL = `https://app.bubblemaps.io/sol/token/${IE_MINT_ADDRESS}`;
@@ -75,7 +75,7 @@ const TeamAnalyticsPage = () => {
 
     const allConfiguredWallets = [
       ...TEAM_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Team" })),
-      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing/Operational" }))
+      ...MARKETING_OPERATIONAL_WALLET_ADDRESSES.map(addr => ({ address: addr, category: "Marketing" }))
     ].filter(w => w.address && !w.address.startsWith("ReplaceWith"));
 
     if (allConfiguredWallets.length === 0) {
@@ -171,7 +171,7 @@ const TeamAnalyticsPage = () => {
       {/* Main content wrapper - PADDING REMOVED, except for top/bottom to clear navbar and give footer space */}
       <div className="w-full max-w-6xl pt-20 pb-8 sm:pb-10 md:pb-12"> {/* REMOVED px classes */}
         
-        <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl mb-4 sm:mb-5 md:mb-6 text-center">Team & Project Wallet Analytics</h1>
+        <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl mb-4 sm:mb-5 md:mb-6 text-center">Team Wallets and Analytics</h1>
 
         {/* BUBBLEMAP IFRAME DISPLAY SECTION - PADDING REMOVED FROM CARD */}
         <div className="leaderboard-content-container w-full mb-4 sm:mb-5"> {/* REMOVED p- classes */}
@@ -206,7 +206,7 @@ const TeamAnalyticsPage = () => {
         <div className="leaderboard-content-container w-full mb-4 sm:mb-5"> {/* REMOVED p- classes */}
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-highlight-color mb-1 sm:mb-2 text-center uppercase tracking-wider px-2">Token Distribution Insights</h2> {/* Added px-2 */}
           <p className="text-xs text-gray-300 mb-2 sm:mb-3 text-center px-2"> {/* Added px-2 */}
-            This section clarifies project-affiliated wallet holdings relative to the total supply.
+            This section clarifies project-affiliated wallet holdings relative to the total supply, and accounts fully for bubblemap data.
           </p>
           {summary.totalSupply > 0 && !isLoading && !error && (
             <div className="px-1 sm:px-2"> {/* Added inner padding for this content block */}
@@ -221,7 +221,7 @@ const TeamAnalyticsPage = () => {
                   <p className="text-xs text-gray-400">({summary.totalBalanceTeam.toLocaleString(undefined, {maximumFractionDigits:0})} $IE)</p>
                 </div>
                 <div>
-                  <h3 className="text-xs font-semibold text-purple-300">Marketing/Ops Wallets Hold</h3>
+                  <h3 className="text-xs font-semibold text-purple-300">Marketing Wallets Hold</h3>
                   <p className="text-sm sm:text-base md:text-lg tabular-nums">{summary.percentageMarketingOps.toFixed(2)}%</p>
                    <p className="text-xs text-gray-400">({summary.totalBalanceMarketingOps.toLocaleString(undefined, {maximumFractionDigits:0})} $IE)</p>
                 </div>
@@ -238,7 +238,7 @@ const TeamAnalyticsPage = () => {
               </div>
               <div className="text-xs text-gray-300 space-y-1 sm:space-y-1.5 text-left">
                 <p><strong className="text-purple-300">Team Wallets:</strong> Allocations for core team/contributors, often vested, showing long-term commitment.</p>
-                <p><strong className="text-purple-300">Marketing/Operational Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p>
+                <p><strong className="text-purple-300">Marketing Wallets:</strong> Funds for project growth, marketing, listings, and operations.</p>
               </div>
             </div>
           )}
