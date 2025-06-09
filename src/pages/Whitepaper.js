@@ -27,7 +27,7 @@ const WhitePaper = () => {
 
   return (
     <div className="white-paper-container p-8 bg-gray-900 text-white min-h-screen">
-      <h1 className="text-4xl font-bold text-center mb-8">$IE White Paper</h1>
+      <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 sm:mb-5 md:mb-6 text-center">WhitePaper</h1>
       {loading ? (
         <p className="text-center text-lg">Loading...</p>
       ) : (
