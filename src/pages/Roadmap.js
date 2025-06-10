@@ -6,18 +6,18 @@ const roadmapData = [
     phase: "Q1 2025",
     title: "Foundation & Launch",
     description: "Launch IE Token animated icon and banner. Create social channels ,Telegram and X.",
-    completed: false,
+    completed: true,
   },
   {
     phase: "Q2 2025",
     title: "Community Building",
     description: "Daily raids and engagement tasks. Launch top-holder leaderboard.",
-    completed: false,
+    completed: true,
   },
   {
     phase: "Q3 2025",
     title: "Product Rollout",
-    description: "Launch Wallet Explorer tool. Build IE Utility Dashboard. NFT Drop for top holders. Service Marketplace beta",
+    description: "Launch Wallet Explorer tool. Build IE Utility Dashboard. NFT Drop for top holders. Service Marketplace beta.",
     completed: false,
   },
   {
@@ -31,7 +31,7 @@ const roadmapData = [
 export default function Roadmap() {
   return (
     <div className="roadmap-container padding-container min-h-screen flex flex-col items-center">
-      <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 sm:mb-5 md:mb-6 text-center">🚀ROADMAP🚀</h1> 
+      <h1 className="leaderboard-page-title text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 sm:mb-5 md:mb-6 text-center">ROADMAP🚀</h1> 
       <div className="mt-10 w-full md:w-4/5 lg:w-3/5">
         {roadmapData.map((item, index) => (
           <div key={index} className="mb-10 p-6 neon-border">
