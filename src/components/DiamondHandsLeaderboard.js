@@ -51,7 +51,7 @@ const DiamondHandsLeaderboard = ({ tokenMintAddress = IE_MINT_ADDRESS }) => {
       if (!accountsResponse) {
         setHolders([]); setIsLoading(false); return;
       }
-      setLoadingMessage(`Found ${accountsResponse.length} holder accounts. Analyzing transaction histories...`);
+      setLoadingMessage(`Found ${accountsResponse.length} transaction accounts. Analyzing transaction histories...`);
       const processedHoldersPromises = accountsResponse.map(async (accountInfo, index) => {
         try {
           const tokenAccountPubkey = accountInfo.pubkey;
