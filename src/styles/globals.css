@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 *,
 *::before,
 *::after {
@@ -23,7 +25,7 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Press Start 2P';
   background: linear-gradient(to right, var(--primary-bg), var(--secondary-bg));
   color: var(--text-color);
   text-shadow: 0 0 8px var(--glow-color);
